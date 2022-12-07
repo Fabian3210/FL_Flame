@@ -190,3 +190,18 @@ class Net_2(nn.Module):
         x = x.view(x.size(0), -1)
         output = self.out(x)
         return output
+
+
+class Test(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.name = "Net"
+        self.fc1 = nn.Linear(1, 2)
+        self.fc2 = nn.Linear(2, 3)
+        self.fc3 = nn.Linear(3, 1)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x

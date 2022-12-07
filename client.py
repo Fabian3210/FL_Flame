@@ -111,7 +111,7 @@ class Client():
     def setup_logger(self, name):
         logger = logging.getLogger(name)
         # logger.addHandler(logging.StreamHandler())
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.WARNING)
         return logger
 
     def receive(self, signal, data):
@@ -130,12 +130,24 @@ class Client():
             return self.model.state_dict()
         elif signal == "Skip": # data will be ignored
             self.logger.debug(f"{self.name} --Model--> Server")
+            if len(self.training_acc_loss) == 0:
+                self.training_acc_loss.append([[np.nan, np.nan]] * self.epochs)
+            else:
+                self.training_acc_loss.append([self.training_acc_loss[-1][-1]] * self.epochs)
+            loss, acc = self.evaluate()
+            self.accs.append(acc)
+            self.losses.append(loss)
+
             return self.model.state_dict()
         elif signal == "Finish": # data = model weights
             self.model.load_state_dict(data)
             self.logger.debug(f"{self.name} <--Complete model-- Server")
             self.logger.info("Exiting!")
+            loss, acc = self.evaluate()
+            self.accs.append(acc)
+            self.losses.append(loss)
             self.plots()
+            return
 
     def plots(self):
         # Plot performance
@@ -154,30 +166,33 @@ class Client():
         ax2.legend(["Accuracy"], loc="center right")
         plt.title(f"{self.name} performance")
         fig.savefig(os.path.join(SAVE_PATH, "performance_" + self.name + ".png"))
+        fig.clf()
 
         # Plot local performance
-        tlosses, taccs = list(zip(*[tu for arr in self.training_acc_loss for tu in arr]))
-        fig, ax = plt.subplots()
-        ax.plot(list(range(len(tlosses))), tlosses, color='blue', marker="o", markersize=3)
-        ax.set_xlabel("Local Epochs")
-        ax.set_xticklabels(self.signals[:-2], rotation=45)
-        ax.set_ylabel('Loss')
-        ax.legend(["Loss"], loc="center left")
-        #ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.set_xticks((np.arange(len(self.signals[:-2]))*self.epochs)-0.5)
-        ax.set_xticklabels(self.signals[:-2])
-        ax.grid()
+        if len(self.training_acc_loss) != 0:
+            tlosses, taccs = list(zip(*[tu for arr in self.training_acc_loss for tu in arr]))
+            fig, ax = plt.subplots()
+            ax.plot(list(range(len(tlosses))), tlosses, color='blue', marker="o", markersize=3)
+            ax.set_xlabel("Local Epochs")
+            ax.set_xticklabels(self.signals[:-2], rotation=45)
+            ax.set_ylabel('Loss')
+            ax.legend(["Loss"], loc="center left")
+            #ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.set_xticks((np.arange(len(self.signals[:-2]))*self.epochs)-0.5)
+            ax.set_xticklabels(self.signals[:-2])
+            ax.grid()
 
-        ax2 = ax.twinx()
-        ax2.plot(list(range(len(taccs))), taccs, color='orange', marker="o", markersize=3)
-        ax2.set_ylabel('Accuracy')
-        for i, sig in zip(ax.get_xticks(), self.signals[:-2]):
-            if sig == "Skip":
-                ax2.fill_between([i, i+self.epochs], -1, 2, color="grey", alpha=0.5)
-        ax2.set_ylim([-0.05, 1.05])
-        ax2.legend(["Accuracy"], loc="center right")
-        plt.title(f"{self.name} local performance")
-        fig.savefig(os.path.join(SAVE_PATH, "local_performance_" + self.name + ".png"))
+            ax2 = ax.twinx()
+            ax2.plot(list(range(len(taccs))), taccs, color='orange', marker="o", markersize=3)
+            ax2.set_ylabel('Accuracy')
+            for i, sig in zip(ax.get_xticks(), self.signals[:-2]):
+                if sig == "Skip":
+                    ax2.fill_between([i, i+self.epochs], -1, 2, color="grey", alpha=0.5)
+            ax2.set_ylim([-0.05, 1.05])
+            ax2.legend(["Accuracy"], loc="center right")
+            plt.title(f"{self.name} local performance")
+            fig.savefig(os.path.join(SAVE_PATH, "local_performance_" + self.name + ".png"))
+            plt.show()
 
         with open(os.path.join(SAVE_PATH, "configuration.txt"), 'a') as f:
             f.write(f"Information from {self.name}:\n\n")

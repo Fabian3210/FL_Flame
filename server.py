@@ -25,7 +25,7 @@ class Server():
         self.criterion = fed_config["criterion"]
         self.learning_rate = fed_config["lr"]
 
-        self.model = model
+        self.model = model.to(device)
         self.data_name = fed_config["data_name"]
         self.iid = fed_config["iid"]
         self.shards_each = fed_config["shards_each"]
@@ -69,6 +69,7 @@ class Server():
 
         plt.title(f"Server Performance")
         fig.savefig(os.path.join(SAVE_PATH, "performance_server.png"))
+        plt.show()
 
         for client in self.clients:
             self.send(client, "Finish")
@@ -186,7 +187,7 @@ class Server():
     def setup_logger(self, name="Server"):
         logger = logging.getLogger(name)
         #logger.addHandler(logging.StreamHandler())
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
         return logger
 
     def send(self,client, signal):
@@ -200,4 +201,3 @@ class Server():
             self.logger.debug(f"Server --Model--> {client.name}")
             client.receive(signal, copy.deepcopy(self.model.state_dict()))
             return
-        #self.logger.debug(f"Server <--Model-- {name}")

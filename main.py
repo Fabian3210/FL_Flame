@@ -3,14 +3,16 @@ from torch import nn
 import time, os
 from models import *
 from server import Server
+from flame_server import Flame_server
 from client import Client
+from adv_client import Adv_client
 from config import SAVE_PATH
 from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
-    fed_config = {"C": 0.8, # percentage of clients to pick (floored)
-                  "K": 3, # clients overall
+    fed_config = {"C": 0.5, # percentage of clients to pick (floored)
+                  "K": 10, # clients overall
                   "R": 5, # rounds of training
                   "E": 3,
                   "B": 64,
@@ -19,24 +21,15 @@ def main():
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "ternary": False,
-                  "iid": False
+                  "iid": True
                   }
 
-    if fed_config["ternary"]  and fed_config["data_name"] == "MNIST":
-        model = Quantized_CNN(Net_2_Q(), fed_config)
-    elif fed_config["data_name"] == "MNIST":
+    if fed_config["data_name"] == "MNIST":
         model = Net_2()
-    elif fed_config["ternary"] and fed_config["data_name"] == "FashionMNIST":
-        model = Quantized_CNN(Net_2_Q(), fed_config)
     elif fed_config["data_name"] == "FashionMNIST":
         model = Net_2()
-    elif fed_config["ternary"] and fed_config["data_name"] == "CIFAR100":
-        model = Quantized_CNN(Net_4(100), fed_config)
     elif fed_config["data_name"] == "CIFAR100":
         model = Net_4(100)
-    elif fed_config["ternary"] and fed_config["data_name"] == "CIFAR10":
-        model = Quantized_CNN(Net_4(10), fed_config)
     elif fed_config["data_name"] == "CIFAR10":
         model = Net_4(10)
     else:
@@ -45,7 +38,7 @@ def main():
     clients = []
     for i in range(fed_config["K"]):
         clients.append(Client(f"Client_{i + 1}"))
-    server = Server(model, fed_config, clients)
+    server = Flame_server(model, fed_config, clients)
 
     # Save configurations
     with open(os.path.join(SAVE_PATH, "configuration.txt"), 'w') as f:
