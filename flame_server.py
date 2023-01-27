@@ -81,7 +81,7 @@ class Flame_server(Server):
         labels = np.array(clusterer.labels_)
         sorted_list = sorted(Counter(labels).items(), key=lambda x:x[1])
         benign_cluster = sorted_list[-1][0]
-        self.logger.info(f"(1) Dynamic Model Filtering| {sorted_list}, benign cluster: {benign_cluster}")
+        self.logger.info(f"(1) Dynamic Model Filtering | {sorted_list}, benign cluster: {benign_cluster}")
         benign_client_models = [model for model, benign in zip(client_models, labels == np.full(self.num_clients, benign_cluster)) if benign]
         return flattened, benign_client_models
 
@@ -91,6 +91,9 @@ class Flame_server(Server):
         flattened_global_model = flattened_global_model.to("cpu").numpy()
         l2_norms = [np.sqrt(np.sum(np.square(np.subtract(flattened_global_model, model)))) for model in flattened]
         S = np.median(l2_norms)
+        if S == 0:
+            self.logger.info("(2) Adaptive Clipping       | Median of L2-norms equals zero, therefore, S was set to np.finfo(np.float32)!")
+            S = np.finfo(np.float32).tiny
         self.past_S.append(S)
         gammas = [l2/S for l2 in l2_norms]
         clipped_client_models = []
@@ -99,7 +102,7 @@ class Flame_server(Server):
             for key in model.keys():
                 temp_model[key] = self.model.state_dict()[key] + (model[key] - self.model.state_dict()[key]) * np.min([1, gamma])
             clipped_client_models.append(temp_model)
-        self.logger.info(f"(2) Adaptive Clipping| S: {S}")
+        self.logger.info(f"(2) Adaptive Clipping       | S: {S}")
         return S, clipped_client_models
 
     def adaptive_noising(self, S, state_dict):
@@ -110,5 +113,5 @@ class Flame_server(Server):
         self.past_sigma.append(sigma)
         for key in state_dict.keys():
             state_dict[key] = state_dict[key].to("cpu") + np.random.normal(0, sigma, state_dict[key].shape)
-        self.logger.info(f"(3) Adaptive Noising| epsilon: {epsilon}, delta: {delta}, lambda: {lambd}, sigma: {sigma}")
+        self.logger.info(f"(3) Adaptive Noising        | epsilon: {epsilon}, delta: {delta}, lambda: {lambd}, sigma: {sigma}")
         return state_dict
