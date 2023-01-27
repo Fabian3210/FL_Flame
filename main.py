@@ -19,9 +19,10 @@ def main():
                   "E": 3,
                   "B": 64,
                   "A": 3,
-                  "A_random": True,
+                  "A_random": False,
                   "ADV_ap": 3,
                   "ADV_ba": 0,
+                  "poison_rate": 0.3,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
@@ -42,23 +43,27 @@ def main():
         raise AssertionError("No fitting model found. Check your parameters!")
 
     clients = []
-    for i in range(fed_config["K"]- fed_config["A"]):
-        clients.append(Client(f"Client_{i + 1}"))
     if fed_config["A_random"]:
+        for i in range(fed_config["K"]-fed_config["A"]):
+            clients.append(Client(f"Client_{i + 1}"))
+
         for i in range(fed_config["A"]):
             r = random.random()
             if r < 0.5:
-                clients.append(Adv_client_ap(f"Adv_Client_{i}_ap"))
+                clients.append(Adv_client_ap(f"Adv_Client_{i}_ap", fed_config["poison_rate"]))
             if r > 0.5:
-                clients.append(Adv_client_ba(f"Adv_Client_{i}_ba"))
+                clients.append(Adv_client_ba(f"Adv_Client_{i}_ba", fed_config["poison_rate"]))
     else:
+        for i in range(fed_config["K"]-(fed_config["ADV_ap"]+fed_config["ADV_ba"])):
+            clients.append(Client(f"Client_{i + 1}"))
+
         s = 0
         for i in range(fed_config["ADV_ap"]):
-            clients.append(Adv_client_ap(f"Adv_Client_{s}_ap"))
+            clients.append(Adv_client_ap(f"Adv_Client_{s}_ap",fed_config["poison_rate"]))
             s = s + 1
 
         for i in range(fed_config["ADV_ba"]):
-            clients.append(Adv_client_ba(f"Adv_Client_{s}_ba"))
+            clients.append(Adv_client_ba(f"Adv_Client_{s}_ba",fed_config["poison_rate"]))
             s = s + 1
     print("Created the following Adversial Clients:")
     for i in clients:

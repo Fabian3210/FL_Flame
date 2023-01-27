@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.DEBUG,
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 class Adv_client_ba(Client): #TODO: Implement adersary
-    def __init__(self, name):
+    def __init__(self, name, pr = 0.3):
         super(Client).__init__()
         self.name = name
         self.logger = self.setup_logger(self.name)
@@ -33,6 +33,7 @@ class Adv_client_ba(Client): #TODO: Implement adersary
         self.batch = None
         self.model = None
         self.poison = None
+        self.poison_rate = pr
 
     def set_params_and_data(self, config, data_indices, model):
         self.epochs = config["epochs"]
@@ -68,7 +69,7 @@ class Adv_client_ba(Client): #TODO: Implement adersary
         poisoned_x = []
         ys = []
         for x,y in self.dataloader:
-            if np.random.rand() < 0.5:
+            if np.random.rand() > self.poison_rate:
                 [poisoned_x.append(t) for t in x.numpy()]
             else:
                 x_adv = None
@@ -117,7 +118,7 @@ class Adv_client_ba(Client): #TODO: Implement adersary
 
 
 class Adv_client_ap(Client): #TODO: Implement adersary
-    def __init__(self, name):
+    def __init__(self, name, pr = 0.3):
         super(Client).__init__()
         self.name = name
         self.logger = self.setup_logger(self.name)
@@ -128,6 +129,7 @@ class Adv_client_ap(Client): #TODO: Implement adersary
         self.batch = None
         self.model = None
         self.poison = None
+        self.poison_rate = pr
 
     def set_params_and_data(self, config, data_indices, model):
         self.epochs = config["epochs"]
@@ -159,10 +161,22 @@ class Adv_client_ap(Client): #TODO: Implement adersary
                                      scale_max=scale_max,
                                      learning_rate=learning_rate, max_iter=max_iter, batch_size=batch_size,
                                      patch_shape=(1, 7, 7), verbose=True)
-        x, y = next(iter(self.dataloader))
+        x,y = next(iter(self.dataloader))
+        self.poison.generate(x.numpy())
+        poisoned_x = []
+        ys = []
+        for x, y in self.dataloader:
+            if np.random.rand() > self.poison_rate:
+                [poisoned_x.append(t) for t in x.numpy()]
+            else:
+                poisoned = self.poison.apply_patch(x.numpy(),scale = 0.5)
+                [poisoned_x.append(t) for t in poisoned]
 
-        self.poison.generate(x=x, y=y)
+            [ys.append(t) for t in y.numpy()]
+        my_dataset = TensorDataset(torch.from_numpy(np.array(poisoned_x)),
+                                   torch.from_numpy(np.array(ys)))  # create your datset
 
+        self.dataloader = DataLoader(my_dataset, batch_size=config["batch_size"], shuffle=True)
         self.logger.debug(f"Received parameters, data_indices and model from server and set them.")
 
     def update(self):
@@ -188,11 +202,8 @@ class Adv_client_ap(Client): #TODO: Implement adersary
             start = time.time()
             self.logger.debug(f"Epoch {epoch+1}/{self.epochs}...")
             for x, y in self.dataloader:
-                x.to(device)
+                x = x.to(device)
                 y = y.to(device)
-                x = self.poison.apply_patch(x, scale=0.5)
-                x = torch.from_numpy(x)
-                #x = torch.from_numpy(patched_images).to(device)
 
 
                 optimizer.zero_grad()
