@@ -5,17 +5,20 @@ from models import *
 from server import Server
 from flame_server import Flame_server
 from client import Client
-from adv_client import Adv_client
+from adv_client import Adv_client_ba, Adv_client_ap
 from config import SAVE_PATH
 from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
     fed_config = {"C": 0.5, # percentage of clients to pick (floored)
-                  "K": 10, # clients overall
+                  "K": 6, # clients overall
                   "R": 5, # rounds of training
                   "E": 3,
                   "B": 64,
+                  "A": 3,
+                  "ADV_ap": False,
+                  "ADV_fc": True,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
@@ -36,8 +39,10 @@ def main():
         raise AssertionError("No fitting model found. Check your parameters!")
 
     clients = []
-    for i in range(fed_config["K"]):
+    for i in range(fed_config["K"]- fed_config["A"]):
         clients.append(Client(f"Client_{i + 1}"))
+    for i in range(fed_config["A"]):
+        clients.append(Adv_client_ba(f"Adv_Client_{i}"))
     server = Flame_server(model, fed_config, clients)
 
     # Save configurations
