@@ -20,8 +20,8 @@ def main():
                   "B": 64,
                   "A": 3,
                   "A_random": True,
-                  "ADV_ap": 2,
-                  "ADV_ba": 1,
+                  "ADV_ap": 3,
+                  "ADV_ba": 0,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
@@ -64,10 +64,6 @@ def main():
     for i in clients:
         if "Adv" in i.name:
             print(i.name)
-
-
-    for i in range(fed_config["A"]):
-        clients.append(Adv_client_ap(f"Adv_Client_{i}"))
     server = Flame_server(model, fed_config, clients)
 
     # Save configurations
