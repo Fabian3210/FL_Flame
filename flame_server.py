@@ -22,6 +22,7 @@ class Flame_server(Server):
         super().__init__(model, fed_config, clients)
         self.past_S = []
         self.past_sigma = []
+        self.adv_clients = ["Adv" in name for name in self.clients_names]
 
     def train(self):
         """
@@ -81,7 +82,8 @@ class Flame_server(Server):
         labels = np.array(clusterer.labels_)
         sorted_list = sorted(Counter(labels).items(), key=lambda x:x[1])
         benign_cluster = sorted_list[-1][0]
-        self.logger.info(f"(1) Dynamic Model Filtering | {sorted_list}, benign cluster: {benign_cluster}")
+        labels = labels == benign_cluster
+        self.logger.info(f"(1) Dynamic Model Filtering | {sorted_list}, benign cluster: {benign_cluster}, TP: {np.sum((labels == True) & (np.array(self.adv_clients) == False))}/{self.num_clients - np.count_nonzero(self.adv_clients)}, TN: {np.sum((labels == False) & (np.array(self.adv_clients) == True))}/{np.count_nonzero(self.adv_clients)}")
         benign_client_models = [model for model, benign in zip(client_models, labels == np.full(self.num_clients, benign_cluster)) if benign]
         return flattened, benign_client_models
 
