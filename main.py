@@ -20,15 +20,15 @@ def main():
                   "B": 64,
                   "A": 3,
                   "A_random": False,
-                  "ADV_ap": 3,
-                  "ADV_ba": 0,
+                  "ADV_ap": 1,
+                  "ADV_ba": 1,
                   "poison_rate": 0.3,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": True
+                  "iid": False
                   }
 
     if fed_config["data_name"] == "MNIST":

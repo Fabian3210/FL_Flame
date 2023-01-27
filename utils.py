@@ -37,6 +37,7 @@ def get_data_by_indices(name, train, indices):
     return torch.utils.data.Subset(dataset, indices)
 
 def split_data_by_indices(data, n, iid=True, shards_each=2):
+    #TODO: Have more influence on teh distribtution: classes per client, distribution via parameter
     '''
     Splits the given data in n splits, instances are represented by their indices. Splits can be either idd or not-iid, for the latter the parameter shards_each
     will be used as well meaning the data will be sorted by class, splited in shards_each * n splits and #shards_each
