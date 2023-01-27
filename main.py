@@ -13,7 +13,7 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
-    fed_config = {"C": 0.5, # percentage of clients to pick (floored)
+    fed_config = {"C": 0.8, # percentage of clients to pick (floored)
                   "K": 10, # clients overall
                   "R": 5, # rounds of training
                   "E": 3,
@@ -22,13 +22,13 @@ def main():
                   "A_random": False,
                   "ADV_ap": 1,
                   "ADV_ba": 1,
-                  "poison_rate": 0.3,
+                  "poison_rate": 0.5,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": False
+                  "iid": True
                   }
 
     if fed_config["data_name"] == "MNIST":

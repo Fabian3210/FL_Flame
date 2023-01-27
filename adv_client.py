@@ -7,7 +7,6 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 from art.estimators.classification import PyTorchClassifier
-
 from config import SAVE_PATH, device
 from utils import get_data_by_indices
 from client import Client
@@ -19,10 +18,10 @@ from art.attacks.evasion import BoundaryAttack, AdversarialPatchPyTorch
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
+logging.getLogger('matplotlib').setLevel(logging.INFO)
 
 class Adv_client_ba(Client): #TODO: Implement adersary
-    def __init__(self, name, pr = 0.3):
+    def __init__(self, name, pr = 0.3, save_example = True):
         super(Client).__init__()
         self.name = name
         self.logger = self.setup_logger(self.name)
@@ -34,6 +33,7 @@ class Adv_client_ba(Client): #TODO: Implement adersary
         self.model = None
         self.poison = None
         self.poison_rate = pr
+        self.save_example = save_example
 
     def set_params_and_data(self, config, data_indices, model):
         self.epochs = config["epochs"]
@@ -64,7 +64,6 @@ class Adv_client_ba(Client): #TODO: Implement adersary
             delta= 0.01,
             epsilon= 0.0001)
 
-        print("hey")
         poisoned_x = []
         ys = []
         for x,y in self.dataloader:
@@ -74,6 +73,11 @@ class Adv_client_ba(Client): #TODO: Implement adersary
                 x_adv = None
                 x_adv = self.poison.generate(x.numpy(), x_adv_init=x_adv)
                 [poisoned_x.append(t) for t in x_adv]
+                if self.save_example:
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x[0][0])
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), x_adv[0][0])
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), (x_adv[0][0]- x[0][0].numpy()))
+                    self.save_example = False
 
             [ys.append(t) for t in y.numpy()]
         my_dataset = TensorDataset(torch.from_numpy(np.array(poisoned_x)), torch.from_numpy(np.array(ys)))  # create your datset
@@ -86,7 +90,7 @@ class Adv_client_ba(Client): #TODO: Implement adersary
 
 
 class Adv_client_ap(Client): #TODO: Implement adersary
-    def __init__(self, name, pr = 0.3):
+    def __init__(self, name, pr = 0.3, save_example = True):
         super(Client).__init__()
         self.name = name
         self.logger = self.setup_logger(self.name)
@@ -98,6 +102,7 @@ class Adv_client_ap(Client): #TODO: Implement adersary
         self.model = None
         self.poison = None
         self.poison_rate = pr
+        self.save_example = save_example
 
     def set_params_and_data(self, config, data_indices, model):
         self.epochs = config["epochs"]
@@ -139,8 +144,17 @@ class Adv_client_ap(Client): #TODO: Implement adersary
             else:
                 poisoned = self.poison.apply_patch(x.numpy(),scale = 0.5)
                 [poisoned_x.append(t) for t in poisoned]
+                if self.save_example:
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x[0][0])
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), poisoned[0][0])
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), (poisoned[0][0]- x[0][0].numpy()))
+                    self.save_example = False
+
 
             [ys.append(t) for t in y.numpy()]
+
+
+
         my_dataset = TensorDataset(torch.from_numpy(np.array(poisoned_x)),
                                    torch.from_numpy(np.array(ys)))  # create your datset
 
