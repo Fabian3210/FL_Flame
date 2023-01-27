@@ -1,3 +1,5 @@
+import random
+
 import torch
 from torch import nn
 import time, os
@@ -12,13 +14,14 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 0.5, # percentage of clients to pick (floored)
-                  "K": 6, # clients overall
+                  "K": 10, # clients overall
                   "R": 5, # rounds of training
                   "E": 3,
                   "B": 64,
                   "A": 3,
-                  "ADV_ap": False,
-                  "ADV_fc": True,
+                  "A_random": True,
+                  "ADV_ap": 2,
+                  "ADV_ba": 1,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
@@ -41,8 +44,30 @@ def main():
     clients = []
     for i in range(fed_config["K"]- fed_config["A"]):
         clients.append(Client(f"Client_{i + 1}"))
+    if fed_config["A_random"]:
+        for i in range(fed_config["A"]):
+            r = random.random()
+            if r < 0.5:
+                clients.append(Adv_client_ap(f"Adv_Client_{i}_ap"))
+            if r > 0.5:
+                clients.append(Adv_client_ba(f"Adv_Client_{i}_ba"))
+    else:
+        s = 0
+        for i in range(fed_config["ADV_ap"]):
+            clients.append(Adv_client_ap(f"Adv_Client_{s}_ap"))
+            s = s + 1
+
+        for i in range(fed_config["ADV_ba"]):
+            clients.append(Adv_client_ba(f"Adv_Client_{s}_ba"))
+            s = s + 1
+    print("Created the following Adversial Clients:")
+    for i in clients:
+        if "Adv" in i.name:
+            print(i.name)
+
+
     for i in range(fed_config["A"]):
-        clients.append(Adv_client_ba(f"Adv_Client_{i}"))
+        clients.append(Adv_client_ap(f"Adv_Client_{i}"))
     server = Flame_server(model, fed_config, clients)
 
     # Save configurations
