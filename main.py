@@ -14,7 +14,7 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 0.8, # percentage of clients to pick (floored)
-                  "K": 5, # clients overall
+                  "K": 10, # clients overall
                   "R": 5, # rounds of training
                   "E": 3,
                   "B": 32,
@@ -28,7 +28,8 @@ def main():
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": True
+                  "iid": False,
+                  "degree_niid": 0.25
                   }
 
     if fed_config["data_name"] == "MNIST":

@@ -28,6 +28,7 @@ class Server():
         self.model = model.to(device)
         self.data_name = fed_config["data_name"]
         self.iid = fed_config["iid"]
+        self.degree_niid = fed_config["degree_niid"]
         self.shards_each = fed_config["shards_each"]
         self.clients = clients
         self.clients_data_len = []
@@ -88,7 +89,8 @@ class Server():
 
         self.test_dataloader = torch.utils.data.DataLoader(self.test_data, batch_size=self.batch_size, shuffle=True)
 
-        splits = split_data_by_indices(self.data, self.num_clients, iid=self.iid, shards_each=self.shards_each)
+        # splits = split_data_by_indices(self.data, self.num_clients, iid=self.iid, shards_each=self.shards_each)
+        splits = split_data_by_indices(self.data, self.num_clients, iid=self.iid, degree_niid=self.degree_niid)
 
         client_config = {"data_name": self.data_name,
                          "epochs": self.local_epochs,
