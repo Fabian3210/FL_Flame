@@ -14,10 +14,10 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 0.8, # percentage of clients to pick (floored)
-                  "K": 10, # clients overall
+                  "K": 5, # clients overall
                   "R": 5, # rounds of training
                   "E": 3,
-                  "B": 64,
+                  "B": 32,
                   "A": 3,
                   "A_random": False,
                   "ADV_ap": 1,
