@@ -90,7 +90,7 @@ class Adv_client_ba(Client): #TODO: Implement adersary
 
         print(f"Accuracy Benign: {np.mean(eval_benign)} for {np.count_nonzero(self.poison_ind == False)} / {len(self.poison_ind)}")
         print(f"Accuracy Adversial: {np.mean(eval_adversial)} for {np.count_nonzero(self.poison_ind == True)} / {len(self.poison_ind)}")
-        if np.mean(eval_adversial) > self.retrain_accuracy:
+        if np.mean(eval_adversial) > self.retrain_accuracy: #TODO: CHECK IN LITERATURE, add this to config saving thing
             self.update_attack()
         super().update()
 

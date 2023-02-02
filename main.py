@@ -14,22 +14,22 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 0.8, # percentage of clients to pick (floored)
-                  "K": 10, # clients overall
-                  "R": 5, # rounds of training
+                  "K": 20, # clients overall
+                  "R": 20, # rounds of training
                   "E": 3,
-                  "B": 32,
+                  "B": 64,
                   "A": 3,
                   "A_random": False,
-                  "ADV_ap": 1,
-                  "ADV_ba": 1,
-                  "poison_rate": 0.5,
+                  "ADV_ap": 0,
+                  "ADV_ba": 0,
+                  "poison_rate": 0.5, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
                   "iid": False,
-                  "degree_niid": 0.25
+                  "degree_niid": 0.8 # 0.8 + 1
                   }
 
     if fed_config["data_name"] == "MNIST":
@@ -47,6 +47,7 @@ def main():
     if fed_config["A_random"]:
         for i in range(fed_config["K"]-fed_config["A"]):
             clients.append(Client(f"Client_{i + 1}"))
+        print(f"Created {fed_config['K']-fed_config['A']} normal clients.")
 
         for i in range(fed_config["A"]):
             r = random.random()
@@ -57,7 +58,7 @@ def main():
     else:
         for i in range(fed_config["K"]-(fed_config["ADV_ap"]+fed_config["ADV_ba"])):
             clients.append(Client(f"Client_{i + 1}"))
-
+        print(f"Created {fed_config['K'] - (fed_config['ADV_ap'] + fed_config['ADV_ba'])} normal clients.")
         s = 0
         for i in range(fed_config["ADV_ap"]):
             clients.append(Adv_client_ap(f"Adv_Client_{s}_ap",fed_config["poison_rate"]))
