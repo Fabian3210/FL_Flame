@@ -149,7 +149,7 @@ def split_data_by_indices(data, n, iid=True, degree_niid=0.25):
                     splits.append(client_data_indices)
 
         print(len(splits))
-        return splits
+    return splits
 
 def split_data(data, n, iid=True, degree_niid=0.25):
     '''

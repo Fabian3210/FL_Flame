@@ -112,9 +112,9 @@ class Adv_client_ba(Client): #TODO: Implement adersary
                 [poisoned_x.append(t) for t in x_adv]
                 self.poison_ind[IND] = 1
                 if self.save_example:
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x[0][0])
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), x_adv[0][0])
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), (x_adv[0][0]- x[0][0].numpy()))
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x[0][0], cmap='gray')
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), x_adv[0][0], cmap='gray')
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), (x_adv[0][0]- x[0][0].numpy()), cmap='gray')
                     self.save_example = False
 
             [ys.append(t) for t in y.numpy()]
@@ -221,9 +221,9 @@ class Adv_client_ap(Client): #TODO: Implement adersary
                 self.poison_ind[IND] = 1
                 [poisoned_x.append(t) for t in poisoned]
                 if self.save_example:
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x[0][0])
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), poisoned[0][0])
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), (poisoned[0][0] - x[0][0].numpy()))
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x[0][0], cmap='gray')
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), poisoned[0][0], cmap='gray')
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), (poisoned[0][0] - x[0][0].numpy()), cmap='gray')
                     self.save_example = False
 
             [ys.append(t) for t in y.numpy()]
