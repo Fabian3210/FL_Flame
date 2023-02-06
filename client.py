@@ -201,3 +201,4 @@ class Client():
             f.write(f"Accuracy: {self.accs}\n")
             f.write(f"Loss: {self.losses}\n")
             f.write(f"Training acc & loss: {self.training_acc_loss}\n")
+            f.write(f"\n")

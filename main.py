@@ -14,21 +14,21 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 0.8, # percentage of clients to pick (floored)
-                  "K": 20, # clients overall
+                  "K": 10, # clients overall
                   "R": 20, # rounds of training
                   "E": 3,
-                  "B": 64,
-                  "A": 3,
+                  "B": 16,
+                  "A": 5,
                   "A_random": False,
-                  "ADV_ap": 0,
-                  "ADV_ba": 0,
+                  "ADV_ap": 2,
+                  "ADV_ba": 1,
                   "poison_rate": 0.5, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": False,
+                  "iid": True,
                   "degree_niid": 0.8 # 0.8 + 1
                   }
 

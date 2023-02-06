@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
-
+cur_round = 0
 class Server():
     def __init__(self, model, fed_config, clients):
         # Setting all required configurations
@@ -145,6 +145,7 @@ class Server():
         self.logger.debug("Start training...")
 
         for r in range(1, self.num_rounds + 1):
+            cur_round = r
             start = time.time()
             self.cur_round += 1
             self.logger.debug(f"Round {r}/{self.num_rounds}...")
