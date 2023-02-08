@@ -5,7 +5,7 @@ from torchvision import transforms
 from sklearn.model_selection import train_test_split
 
 
-LESS_DATA = 2000 # Int, >0 if less data should be used, otherwise 0
+LESS_DATA = 10000 # Int, >0 if less data should be used, otherwise 0
 SERVER_TEST_SIZE = 1000
 SERVER_TRAIN_SIZE = 100
 
@@ -148,7 +148,6 @@ def split_data_by_indices(data, n, iid=True, degree_niid=0.25):
                     client_data_indices = get_non_idd_data(data, indices, targets, target_class = random_class, local_len = local_len, degree_niid = degree_niid)
                     splits.append(client_data_indices)
 
-        print(len(splits))
     return splits
 
 def split_data(data, n, iid=True, degree_niid=0.25):
@@ -197,7 +196,7 @@ def split_data(data, n, iid=True, degree_niid=0.25):
                     random_class = np.random.randint(n_classes) 
                     client_data_indices = get_non_idd_data(data, indices, targets, target_class = random_class, local_len = local_len, degree_niid = degree_niid)
                     splits.append(torch.utils.data.Subset(client_data_indices))
-        return splits
+    return splits
 
 
 

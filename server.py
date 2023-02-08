@@ -70,7 +70,7 @@ class Server():
 
         plt.title(f"Server Performance")
         fig.savefig(os.path.join(SAVE_PATH, "performance_server.png"))
-        plt.show()
+        # plt.show()
 
         for client in self.clients:
             self.send(client, "Finish")

@@ -185,7 +185,7 @@ class Adv_client_ba(Client):
             ax2.legend(["Accuracy"], loc="center right")
             plt.title(f"{self.name} local performance")
             fig.savefig(os.path.join(SAVE_PATH, "local_performance_" + self.name + ".png"))
-            plt.show()
+            # plt.show()
 
 
 
@@ -367,7 +367,7 @@ class Adv_client_ap(Client):
             ax2.legend(["Accuracy"], loc="center right")
             plt.title(f"{self.name} local performance")
             fig.savefig(os.path.join(SAVE_PATH, "local_performance_" + self.name + ".png"))
-            plt.show()
+            # plt.show()
 
         with open(os.path.join(SAVE_PATH, "configuration.txt"), 'a') as f:
             f.write(f"Information from {self.name}:\n\n")

@@ -13,23 +13,24 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
-    fed_config = {"C": 0.8, # percentage of clients to pick (floored)
-                  "K": 10, # clients overall
+    fed_config = {"C": 0.6, # percentage of clients to pick (floored)
+                  "K": 20, # clients overall
                   "R": 20, # rounds of training
                   "E": 3,
-                  "B": 16,
+                  "B": 64,
                   "A": 5,
                   "A_random": False,
-                  "ADV_ap": 2,
-                  "ADV_ba": 1,
-                  "poison_rate": 0.5, #TODO: Poison Rates in Literatures
+                  "ADV_ap": 5,
+                  "ADV_ba": 0,
+                  "poison_rate": 0.75, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": True,
-                  "degree_niid": 0.8 # 0.8 + 1
+                  "iid": False,
+                  "degree_niid": 0.8, # 0.8 + 1
+                  "flame": True
                   }
 
     if fed_config["data_name"] == "MNIST":
@@ -71,7 +72,11 @@ def main():
     for i in clients:
         if "Adv" in i.name:
             print(i.name)
-    server = Flame_server(model, fed_config, clients)
+    
+    if fed_config["flame"]:
+        server = Flame_server(model, fed_config, clients)
+    else:
+        server = Server(model, fed_config, clients)    
 
     # Save configurations
     with open(os.path.join(SAVE_PATH, "configuration.txt"), 'w') as f:
