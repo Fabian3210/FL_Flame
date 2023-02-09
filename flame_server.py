@@ -22,7 +22,45 @@ class Flame_server(Server):
         super().__init__(model, fed_config, clients)
         self.past_S = []
         self.past_sigma = []
+        self.tpnp = []
         self.adv_clients = ["Adv" in name for name in self.clients_names]
+
+    def run(self):
+        self.setup_data_and_model()
+
+        self.fit()
+
+        # Save results to file
+        with open(os.path.join(SAVE_PATH, "configuration.txt"), 'a') as f:
+            f.write(f"Information from Server:\n\n")
+            f.write(f"Accuracy: {self.accs}\n")
+            f.write(f"TPNP: {self.tpnp}\n")
+            f.write(f"S: {self.past_S}\n")
+            f.write(f"sigma: {self.past_sigma}\n\n")
+
+
+        # Plot performance
+        fig, ax = plt.subplots()
+        ax.plot(list(range(len(self.losses))), self.losses, color='blue', marker="o", markersize=3)
+        ax.set_xlabel("Global Rounds")
+        ax.set_ylabel('Loss')
+        ax.legend(["Loss"], loc="center left")
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+        ax2 = ax.twinx()
+        ax2.plot(list(range(len(self.accs))), self.accs, color='orange', marker="o", markersize=3)
+        ax2.set_ylabel('Accuracy')
+        ax2.set_ylim([-0.05, 1.05])
+        ax2.legend(["Accuracy"], loc="center right")
+        ax.grid()
+
+        plt.title(f"Server Performance")
+        fig.savefig(os.path.join(SAVE_PATH, "performance_server.png"))
+        # plt.show()
+
+        for client in self.clients:
+            self.send(client, "Finish")
+        self.logger.info("Exiting.")
 
     def train(self):
         """
@@ -83,7 +121,9 @@ class Flame_server(Server):
         sorted_list = sorted(Counter(labels).items(), key=lambda x:x[1])
         benign_cluster = sorted_list[-1][0]
         labels = labels == benign_cluster
-        self.logger.info(f"(1) Dynamic Model Filtering | {sorted_list}, benign cluster: {benign_cluster}, TP: {np.sum((labels == True) & (np.array(self.adv_clients) == False))}/{self.num_clients - np.count_nonzero(self.adv_clients)}, TN: {np.sum((labels == False) & (np.array(self.adv_clients) == True))}/{np.count_nonzero(self.adv_clients)}")
+        tpnp2 = [f"{np.sum((labels == True) & (np.array(self.adv_clients) == False))}/{self.num_clients - np.count_nonzero(self.adv_clients)}", f"{np.sum((labels == False) & (np.array(self.adv_clients) == True))}/{np.count_nonzero(self.adv_clients)}"]
+        self.tpnp.append(tpnp2)
+        self.logger.info(f"(1) Dynamic Model Filtering | {sorted_list}, benign cluster: {benign_cluster}, TP: {tpnp2[0]}, TN: {tpnp2[1]}")
         benign_client_models = [model for model, benign in zip(client_models, labels == np.full(self.num_clients, benign_cluster)) if benign]
         return flattened, benign_client_models
 
