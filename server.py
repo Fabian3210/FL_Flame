@@ -8,7 +8,8 @@ from models import *
 from matplotlib.ticker import MaxNLocator
 
 import logging
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(filename=os.path.join(SAVE_PATH, "server_logger.txt"),
+                    level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
