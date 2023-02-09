@@ -14,13 +14,13 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 0.6, # percentage of clients to pick (floored)
-                  "K": 20, # clients overall
-                  "R": 20, # rounds of training
+                  "K": 10, # clients overall
+                  "R": 2, # rounds of training
                   "E": 3,
                   "B": 64,
-                  "A": 5,
+                  "A": 0,
                   "A_random": False,
-                  "ADV_ap": 5,
+                  "ADV_ap": 6,
                   "ADV_ba": 0,
                   "poison_rate": 0.75, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
@@ -28,7 +28,7 @@ def main():
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": False,
+                  "iid": True,
                   "degree_niid": 0.8, # 0.8 + 1
                   "flame": True
                   }
@@ -68,10 +68,10 @@ def main():
         for i in range(fed_config["ADV_ba"]):
             clients.append(Adv_client_ba(f"Adv_Client_{s}_ba",fed_config["poison_rate"]))
             s = s + 1
-    print("Created the following Adversial Clients:")
-    for i in clients:
-        if "Adv" in i.name:
-            print(i.name)
+    if (fed_config["ADV_ap"]+fed_config["ADV_ba"]) != 0:
+        print("Created the following Adversial Clients:")
+        for i in clients:
+            if "Adv" in i.name: print(i.name)
     
     if fed_config["flame"]:
         server = Flame_server(model, fed_config, clients)
