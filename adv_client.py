@@ -41,7 +41,7 @@ class Adv_client_ba(Client):
         self.poison = None
         self.poison_rate = pr
         self.save_example = True
-        self.retrain_accuracy = 0.93
+        self.retrain_accuracy = 1
         self.acc_benign = []
         self.acc_poison = []
 
@@ -78,8 +78,8 @@ class Adv_client_ba(Client):
 
         self.poison = BoundaryAttack(
             classifier_py,
-            targeted=False,
-            max_iter = 250,
+            targeted=True,
+            max_iter = 500,
             delta= 0.01,
             epsilon= 0.0001, verbose=False)
         self.update_attack()
@@ -124,7 +124,9 @@ class Adv_client_ba(Client):
                 [poisoned_x.append(t) for t in x.numpy()]
             else:
                 x_adv = None
-                x_adv = self.poison.generate(x.numpy(), x_adv_init=x_adv)
+                s = np.copy(y)
+                np.random.shuffle(s)
+                x_adv = self.poison.generate(x=x.numpy(), y = s, x_adv_init=x_adv)
                 [poisoned_x.append(t) for t in x_adv]
                 self.poison_ind[IND] = 1
                 if self.save_example:
@@ -229,7 +231,7 @@ class Adv_client_ap(Client):
         self.poison = None
         self.poison_rate = pr
         self.save_example = True
-        self.retrain_accuracy = 0.85
+        self.retrain_accuracy = 1
         self.acc_benign = []
         self.acc_poison = []
 
@@ -260,10 +262,10 @@ class Adv_client_ap(Client):
         learning_rate = 5000.
         max_iter = 250
 
-        self.poison = AdversarialPatchPyTorch(estimator=classifier_py, rotation_max=rotation_max, scale_min=scale_min,
+        self.poison = AdversarialPatchPyTorch(estimator=classifier_py, targeted=True,rotation_max=rotation_max, scale_min=scale_min,
                                      scale_max=scale_max,
                                      learning_rate=learning_rate, max_iter=max_iter, batch_size=batch_size,
-                                     patch_shape=(1, 7, 7), verbose=False)
+                                     patch_shape=(1, 28, 28), verbose=False)
         self.update_attack()
         self.logger.debug(f"Received parameters, data_indices and model from server and set them.")
 
@@ -286,16 +288,20 @@ class Adv_client_ap(Client):
         self.logger.info(f"Accuracy Adversial: {np.mean(eval_adversial)} for {np.count_nonzero(self.poison_ind == True)} / {len(self.poison_ind)}")
         if np.mean(eval_adversial) > self.retrain_accuracy:
             self.logger.info("Retraining: ", self.name)
-            print("Retraining", self.name)
-            self.update_attack()
+        print("Retraining", self.name)
+        self.update_attack()
         super().update()
 
     def update_attack(self):
 
         self.dataloader = torch.utils.data.DataLoader(self.data, batch_size=self.config["batch_size"], shuffle=True)
         x, y = next(iter(self.dataloader))
+
+        v, c = np.unique(y, return_counts=True)
+        ind = np.argmax(c)
+
         self.model.to("cpu")
-        self.poison.generate(x.numpy())
+        self.poison.generate(x[y==ind].numpy(), y[y==ind].numpy())
         self.poison_ind = np.zeros(int(np.ceil(len(self.dataloader.dataset) / self.batch)))
         poisoned_x = []
         ys = []
@@ -307,7 +313,7 @@ class Adv_client_ap(Client):
                 [poisoned_x.append(t) for t in x.numpy()]
             else:
 
-                poisoned = self.poison.apply_patch(x.numpy(), scale=0.5)
+                poisoned = self.poison.apply_patch(x.numpy(), scale=0.8)
                 self.poison_ind[IND] = 1
                 [poisoned_x.append(t) for t in poisoned]
                 if self.save_example:
