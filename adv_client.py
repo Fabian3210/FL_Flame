@@ -17,16 +17,19 @@ from random import random
 from matplotlib.ticker import MaxNLocator
 from art.attacks.evasion import BoundaryAttack, AdversarialPatchPyTorch
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
-logging.getLogger('matplotlib').setLevel(logging.INFO)
+logging.getLogger('matplotlib').setLevel(logging.ERROR)
 
 class Adv_client_ba(Client):
     def __init__(self, name, pr = 0.3):
         super(Client).__init__()
         self.name = name
         self.logger = self.setup_logger(self.name)
+        self.logger.setLevel(logging.DEBUG) # TODO: Remove
         self.accs = []
         self.losses = []
         self.training_acc_loss = []
@@ -35,23 +38,12 @@ class Adv_client_ba(Client):
         self.batch = None
         self.model = None
 
-
-
-
         self.poison = None
         self.poison_rate = pr
         self.save_example = True
         self.retrain_accuracy = 1
         self.acc_benign = []
         self.acc_poison = []
-
-    def setup_logger(self, name):
-        logger = logging.getLogger(name)
-        # logger.addHandler(logging.StreamHandler())
-        logger.setLevel(logging.INFO)
-        return logger
-
-
 
     def set_params_and_data(self, config, data_indices, model):
         self.config = config
@@ -84,7 +76,6 @@ class Adv_client_ba(Client):
             epsilon= 0.0001, verbose=False)
         self.update_attack()
         self.logger.debug(f"Received parameters, data_indices and model from server and set them.")
-
 
     def update(self):
         #check for accuracy of missclassified data
@@ -204,21 +195,12 @@ class Adv_client_ba(Client):
 
             f.write(f"\n")
 
-
-
-
-
-
-
-
-
-
-
 class Adv_client_ap(Client):
     def __init__(self, name, pr = 0.3):
         super(Client).__init__()
         self.name = name
         self.logger = self.setup_logger(self.name)
+        self.logger.setLevel(logging.INFO) # TODO: Remove
         self.accs = []
         self.losses = []
         self.training_acc_loss = []
@@ -271,26 +253,17 @@ class Adv_client_ap(Client):
 
     def update(self):
         #check for accuracy of missclassified data
-        eval_benign = []
-        eval_adversial = []
-        for s, i in enumerate(self.poison_ind):
-            x, y = self.dataloader.dataset[s * self.batch:s * self.batch + self.batch]
-            x = x.to(device)
-            y = y.to(device)
-            self.model.to(device)
-
-            pred: object = self.model(x).max(dim=1).indices
-            if i == 0:
-                eval_benign.append((torch.sum(pred == y) / len(y)).cpu())
-            else:
-                eval_adversial.append((torch.sum(pred == y) / len(y)).cpu())
-        self.logger.info(f"Accuracy Benign: {np.mean(eval_benign)} for {np.count_nonzero(self.poison_ind == False)} / {len(self.poison_ind)}")
-        self.logger.info(f"Accuracy Adversial: {np.mean(eval_adversial)} for {np.count_nonzero(self.poison_ind == True)} / {len(self.poison_ind)}")
-        if np.mean(eval_adversial) > self.retrain_accuracy:
+        benign_acc, adv_acc = self.adv_metrics()
+        self.logger.debug(f"Accuracy Benign: {benign_acc} for {np.count_nonzero(self.poison_ind == False)} / {len(self.poison_ind)}")
+        self.logger.debug(f"Accuracy Adversial: {adv_acc} for {np.count_nonzero(self.poison_ind == True)} / {len(self.poison_ind)}")
+        if np.mean(adv_acc) > self.retrain_accuracy:
             self.logger.info("Retraining: ", self.name)
-        print("Retraining", self.name)
+        self.logger.debug("Retraining the attack")
         self.update_attack()
         super().update()
+        benign_acc, adv_acc = self.adv_metrics()
+        self.acc_benign.append(benign_acc)
+        self.acc_poison.append(adv_acc)
 
     def update_attack(self):
 
@@ -323,12 +296,35 @@ class Adv_client_ap(Client):
                     self.save_example = False
 
             [ys.append(t) for t in y.numpy()]
-        self.logger.info("Poison took ", int(time.time()-t), " seconds in ", self.name)
+        self.logger.info(f"Poison took {int(time.time() - t)} seconds in {self.name}")
         my_dataset = TensorDataset(torch.from_numpy(np.array(poisoned_x)),
                                    torch.from_numpy(np.array(ys)))  # create your datset
 
         self.dataloader = DataLoader(my_dataset, batch_size=self.config["batch_size"], shuffle=True)
         self.update_attack_rounds.append(cur_round)
+
+    def adv_metrics(self):
+        self.model.eval()
+        eval_benign = []
+        eval_adversial = []
+        for s, i in enumerate(self.poison_ind):
+            x, y = self.dataloader.dataset[s * self.batch:s * self.batch + self.batch]
+            x = x.to(device)
+            y = y.to(device)
+            self.model.to(device)
+
+            pred: object = self.model(x).max(dim=1).indices
+            if i == 0:
+                eval_benign.append((torch.sum(pred == y) / len(y)).cpu())
+            else:
+                eval_adversial.append((torch.sum(pred == y) / len(y)).cpu())
+        acc = np.mean(eval_benign)
+        adv_acc = np.mean(eval_adversial)
+        return acc, adv_acc
+
+    def finish_function(self):
+        benign_acc, adv_acc = self.adv_metrics()
+        self.logger.info(f"Adv. metrics using final model: benign_acc: {benign_acc}, adv_acc: {adv_acc} ")
 
     def plots(self):
         # Plot performance

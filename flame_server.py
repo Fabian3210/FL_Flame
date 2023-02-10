@@ -75,6 +75,14 @@ class Flame_server(Server):
 
         client_models = [self.send(client, signal) for client, signal in zip(self.clients, signals)]
 
+
+        for i, client_weights in enumerate(client_models):
+            cmodel = Net_2()
+            cmodel.load_state_dict(client_weights)
+            loss, acc = self.evaluate(eval_model=cmodel)
+            self.logger.info(f"{self.clients_names[i]} values BEFORE FedAvg: loss: {loss:.3f}, accuracy: {acc:.3f}.")
+
+
         flattened, benign_client_models = self.dynamic_model_filtering(client_models)
         S, clipped_client_models = self.adaptive_clipping(flattened, benign_client_models)
         self.average_model(clipped_client_models, np.full(len(clipped_client_models), 1/len(clipped_client_models)))

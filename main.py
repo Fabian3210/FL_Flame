@@ -7,20 +7,20 @@ from models import *
 from server import Server
 from flame_server import Flame_server
 from client import Client
-from adv_client import Adv_client_ba, Adv_client_ap
+from adv_client import *
 from config import SAVE_PATH
 from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
-    fed_config = {"C": 0.6, # percentage of clients to pick (floored)
-                  "K": 20, # clients overall
-                  "R": 20, # rounds of training
+    fed_config = {"C": 1, # percentage of clients to pick (floored)
+                  "K": 3, # clients overall
+                  "R": 3, # rounds of training
                   "E": 3,
                   "B": 64,
-                  "A": 5,
+                  "A": 0,
                   "A_random": False,
-                  "ADV_ap": 5,
+                  "ADV_ap": 3,
                   "ADV_ba": 0,
                   "poison_rate": 0.75, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
@@ -28,9 +28,9 @@ def main():
                   "lr": 0.01,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": False,
+                  "iid": True,
                   "degree_niid": 0.8, # 0.8 + 1
-                  "flame": True
+                  "flame": False
                   }
 
     if fed_config["data_name"] == "MNIST":
@@ -68,10 +68,10 @@ def main():
         for i in range(fed_config["ADV_ba"]):
             clients.append(Adv_client_ba(f"Adv_Client_{s}_ba",fed_config["poison_rate"]))
             s = s + 1
-    print("Created the following Adversial Clients:")
-    for i in clients:
-        if "Adv" in i.name:
-            print(i.name)
+    if (fed_config["ADV_ap"]+fed_config["ADV_ba"]) != 0:
+        print("Created the following Adversial Clients:")
+        for i in clients:
+            if "Adv" in i.name: print(i.name)
     
     if fed_config["flame"]:
         server = Flame_server(model, fed_config, clients)

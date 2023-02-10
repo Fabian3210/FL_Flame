@@ -64,7 +64,7 @@ class Client():
 
             loss, acc = self.evaluate()
             temp_performance.append([loss, acc])
-            self.logger.info(f"Epoch {epoch+1}/{self.epochs} completed ({int(time.time()-start)} sec): loss: {loss:.3f}, accuracy: {acc:.3f}.")
+            self.logger.info(f"Epoch {epoch+1}/{self.epochs} completed ({int(time.time()-start)} sec): loss: {loss:.3f}, acc: {acc:.3f}.")
 
         self.training_acc_loss.append(temp_performance)
         self.logger.info("...finished training!")
@@ -111,12 +111,12 @@ class Client():
     def setup_logger(self, name):
         logger = logging.getLogger(name)
         # logger.addHandler(logging.StreamHandler())
-        logger.setLevel(logging.WARNING)
+        logger.setLevel(logging.INFO)
         return logger
 
     def receive(self, signal, data):
         self.signals.append(signal)
-        self.logger.info(f"{self.name} <--{signal}-- Server")
+        self.logger.debug(f"{self.name} <--{signal}-- Server")
         if signal == "Update": # data = model weights
             self.model.load_state_dict(data)
             self.logger.debug(f"{self.name} <--Model-- Server")
@@ -142,12 +142,17 @@ class Client():
         elif signal == "Finish": # data = model weights
             self.model.load_state_dict(data)
             self.logger.debug(f"{self.name} <--Complete model-- Server")
-            self.logger.info("Exiting!")
             loss, acc = self.evaluate()
             self.accs.append(acc)
             self.losses.append(loss)
+            self.logger.info(f"Metrics using final model: loss: {loss:.3f}, acc: {acc:.3f}.")
+            self.finish_function()
+            self.logger.info("Exiting!")
             self.plots()
             return
+
+    def finish_function(self):
+        pass
 
     def plots(self):
         # Plot performance

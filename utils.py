@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 
 LESS_DATA = 3000 # Int, >0 if less data should be used, otherwise 0
 SERVER_TEST_SIZE = 1000
-SERVER_TRAIN_SIZE = 100
+SERVER_TRAIN_SIZE = 10
 
 
 def get_data_by_indices(name, train, indices):
@@ -259,12 +259,10 @@ def get_data(name, train):
 
     if not train:
         indices = list(zip(np.arange(len(dataset)), dataset.targets))
-        test_indices, train_indices = train_test_split(indices, test_size=SERVER_TEST_SIZE, train_size=SERVER_TRAIN_SIZE, shuffle=True, stratify=dataset.targets)
+        train_indices, test_indices = train_test_split(indices, test_size=SERVER_TEST_SIZE, train_size=SERVER_TRAIN_SIZE, shuffle=True, stratify=dataset.targets)
         test_indices, _ = zip(*test_indices)
         train_indices, _ = zip(*train_indices)
         dataset = (torch.utils.data.Subset(dataset, test_indices), torch.utils.data.Subset(dataset, train_indices))
-
-
 
     return dataset
 
@@ -287,5 +285,18 @@ class CustomTensorDataset(torch.utils.data.Dataset):
 
 
     
-
+'''
+count = 0
+for bx,_ in self.test_dataloader:
+    for x in bx:
+        fig, ax = plt.subplots()
+        ax.imshow(x[0])
+        fig.show()
+        count += 1
+print(count)
+'''
+'''
+from collections import Counter
+sorted(Counter(np.array(self.test_data.dataset.targets)[np.array(self.test_data.indices)]).items())
+'''
 
