@@ -234,7 +234,7 @@ class Adv_client_ap(Client):
             clip_values=(-1, 1),
             loss=self.criterion,
             optimizer=self.optimizer,
-            input_shape=(1, 28, 28),
+            input_shape=self.data.dataset.data[0].shape[::-1],
             nb_classes=10,
         )
         batch_size = self.batch
@@ -247,7 +247,7 @@ class Adv_client_ap(Client):
         self.poison = AdversarialPatchPyTorch(estimator=classifier_py, targeted=True,rotation_max=rotation_max, scale_min=scale_min,
                                      scale_max=scale_max,
                                      learning_rate=learning_rate, max_iter=max_iter, batch_size=batch_size,
-                                     patch_shape=(1, 28, 28), verbose=False)
+                                     patch_shape=self.data.dataset.data[0].shape[::-1], verbose=False)
         self.update_attack()
         self.logger.debug(f"Received parameters, data_indices and model from server and set them.")
 
@@ -290,9 +290,12 @@ class Adv_client_ap(Client):
                 self.poison_ind[IND] = 1
                 [poisoned_x.append(t) for t in poisoned]
                 if self.save_example:
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x[0][0], cmap='gray')
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), poisoned[0][0], cmap='gray')
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), (poisoned[0][0] - x[0][0].numpy()), cmap='gray')
+                    img = ((x[0].numpy() * 0.5) + 0.5).transpose(1, 2, 0)
+                    p_img = ((poisoned[0] * 0.5) + 0.5).transpose(1, 2, 0)
+                    diff = ((p_img - img) * 0.5) + 0.5
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), img)
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), p_img)
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_poison.png"), diff)
                     self.save_example = False
 
             [ys.append(t) for t in y.numpy()]

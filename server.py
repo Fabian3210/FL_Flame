@@ -1,5 +1,5 @@
 import torch
-import copy, os, time
+import copy, os, time, copy
 import numpy as np
 import matplotlib.pyplot as plt
 from config import SAVE_PATH, device
@@ -138,7 +138,7 @@ class Server():
         client_models = [self.send(client, signal) for client, signal in zip(self.clients, signals)]
         coefficients = [size/sum(self.clients_data_len) for size in self.clients_data_len]
         for i, client_weights in enumerate(client_models):
-            cmodel = Net_2()
+            cmodel = copy.deepcopy(self.model)
             cmodel.load_state_dict(client_weights)
             loss, acc = self.evaluate(eval_model=cmodel)
             self.logger.info(f"{self.clients_names[i]} values BEFORE FedAvg: loss: {loss:.3f}, accuracy: {acc:.3f}.")
