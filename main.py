@@ -7,8 +7,8 @@ from models import *
 from server import Server
 from flame_server import Flame_server
 from client import Client
-from adv_client import Adv_client_ba, Adv_client_ap, Adv_client_backdoor
-from adv_clients import adv_client_random_label
+from adv_client import Adv_client_ba, Adv_client_ap
+from adv_clients import adv_client_random_label, Adv_client_backdoor
 from config import SAVE_PATH
 from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
@@ -62,7 +62,7 @@ def main():
             clients.append(Adv_client_ba(f"Adv_Client_{s}_ba", fed_config["poison_rate"]))
             s = s + 1
         for i in range(fed_config["ADV_bd"]):
-            clients.append(adv_client_random_label(f"Adv_Client_{s}_random_label",fed_config["poison_rate"]))
+            clients.append(Adv_client_backdoor(f"Adv_Client_{s}_random_label",fed_config["poison_rate"]))
             s = s + 1
     if (fed_config["ADV_ap"]+fed_config["ADV_ba"]+fed_config["ADV_bd"]) != 0:
         print("Created the following Adversial Clients:")

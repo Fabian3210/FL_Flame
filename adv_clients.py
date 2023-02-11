@@ -1,6 +1,7 @@
 import os
 import time
 import torch
+from art.attacks.poisoning import PoisoningAttackBackdoor
 from torch.utils.data import TensorDataset, DataLoader
 
 from collections import Counter
@@ -18,6 +19,7 @@ import logging
 from random import random
 from matplotlib.ticker import MaxNLocator
 from art.attacks.evasion import BoundaryAttack, AdversarialPatchPyTorch
+from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
 
 import warnings
 
@@ -29,7 +31,10 @@ class Adv_Client(Client):
         self.poison_ind = []
         self.poison = None
         self.poison_rate = pr
+        self.save_example = True
 
+    def poison_data(self):
+        pass
 
 
     def adv_metrics(self):
@@ -123,7 +128,7 @@ class adv_client_random_label(Adv_Client):
 
     def set_params_and_data(self, config, data_indices, model):
         super(adv_client_random_label, self).set_params_and_data(config,data_indices,model)
-        self.dataloader = torch.utils.data.DataLoader(self.create_random_labels(), batch_size=config["batch_size"], shuffle=False,drop_last=True)
+        self.dataloader = torch.utils.data.DataLoader(self.poison(), batch_size=config["batch_size"], shuffle=False,drop_last=True)
         for x,y in self.dataloader:
             print(x,y)
             break
@@ -131,7 +136,7 @@ class adv_client_random_label(Adv_Client):
 
 
 
-    def create_random_labels(self):
+    def poison(self):
         x_l = None
         y_l = None
         for x,y in self.dataloader:
@@ -143,6 +148,82 @@ class adv_client_random_label(Adv_Client):
         y_l = torch.squeeze(torch.randint(0,9, size = y_l.shape),dim = 0).to(device)
         self.logger.info(np.unique(y_l.cpu()))
         return TensorDataset(x_l, y_l)
+
+class Adv_client_backdoor(Adv_Client):
+    def __init__(self, name, pr):
+        super(Adv_client_backdoor, self).__init__(name, pr)
+        self.dataloader = None
+
+    def set_params_and_data(self, config, data_indices, model):
+        super(Adv_client_backdoor, self).set_params_and_data(config,data_indices,model)
+        self.poison_data()
+
+
+
+    def poison_data(self, BACKDOOR_TYPE = "pattern"):
+        x,_ = next(iter(self.data))
+        max_val = np.max(x.numpy())
+        x_l = None
+        y_l = None
+        for x, y in self.dataloader:
+            if x_l is None:
+                x_l, y_l = x.numpy(), y.numpy()
+            else:
+                x_l = np.concatenate((x_l, x.numpy()))
+                y_l = np.concatenate((y_l, y.numpy()))
+
+        def add_modification(x):
+            if BACKDOOR_TYPE == 'pattern':
+                return add_pattern_bd(x, pixel_value=max_val)
+            elif BACKDOOR_TYPE == 'pixel':
+                return add_single_bd(x, pixel_value=max_val)
+            else:
+                raise ("Unknown backdoor type")
+
+        def poison_dataset(x_clean, y_clean, percent_poison, poison_func):
+            x_poison = np.copy(x_clean)
+            y_poison = np.copy(y_clean)
+            is_poison = np.zeros(len(y_poison))
+
+            sources = np.arange(10)  # 0, 1, 2, 3, ...
+            targets = (np.arange(10) + 1) % 10  # 1, 2, 3, 4, ...
+            for i, (src, tgt) in enumerate(zip(sources, targets)):
+                n_points_in_tgt = np.size(np.where(y_clean == tgt))
+                num_poison = round((percent_poison * n_points_in_tgt) / (1 - percent_poison))
+                src_imgs = x_clean[y_clean == src]
+
+                n_points_in_src = np.shape(src_imgs)[0]
+                indices_to_be_poisoned = np.random.choice(n_points_in_src, num_poison)
+
+                imgs_to_be_poisoned = np.copy(src_imgs[indices_to_be_poisoned])
+                backdoor_attack = PoisoningAttackBackdoor(poison_func)
+                imgs_to_be_poisoned, poison_labels = backdoor_attack.poison(imgs_to_be_poisoned,
+                                                                            y=np.ones(num_poison) * tgt)
+                x_poison = np.append(x_poison, imgs_to_be_poisoned, axis=0)
+                y_poison = np.append(y_poison, poison_labels, axis=0)
+                is_poison = np.append(is_poison, np.ones(num_poison))
+
+            is_poison = is_poison != 0
+
+            return is_poison, x_poison, y_poison
+
+        # Poison training data
+
+        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = poison_dataset(np.transpose(x_l, (0,3,2,1)), y_l, self.poison_rate,
+                                                                           add_modification)
+        x_train, y_train = preprocess(x_poisoned_raw, y_poisoned_raw)
+        # Add channel axis:
+
+
+
+
+        # Shuffle training data
+        n_train = np.shape(y_train)[0]
+        shuffled_indices = np.arange(n_train)
+        np.random.shuffle(shuffled_indices)
+        x_train = x_train[shuffled_indices]
+        y_train = y_train[shuffled_indices]
+        is_poison_train = is_poison_train[shuffled_indices]
 
 
 if __name__ == '__main__':
