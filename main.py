@@ -7,21 +7,23 @@ from models import *
 from server import Server
 from flame_server import Flame_server
 from client import Client
-from adv_client import *
+from adv_client import Adv_client_ba, Adv_client_ap, Adv_client_backdoor
+from adv_clients import adv_client_random_label
 from config import SAVE_PATH
 from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
     fed_config = {"C": 1, # percentage of clients to pick (floored)
-                  "K": 20, # clients overall
-                  "R": 20, # rounds of training
+                  "K": 5, # clients overall
+                  "R": 10, # rounds of training
                   "E": 3,
                   "B": 64,
-                  "A": 0,
+                  "A": 5,
                   "A_random": False,
                   "ADV_ap": 0,
                   "ADV_ba": 0,
+                  "ADV_bd": 1,
                   "poison_rate": 0.75, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
@@ -46,20 +48,23 @@ def main():
             if r < 0.5:
                 clients.append(Adv_client_ap(f"Adv_Client_{i}_ap", fed_config["poison_rate"]))
             if r > 0.5:
-                clients.append(Adv_client_ba(f"Adv_Client_{i}_ba", fed_config["poison_rate"]))
+                clients.append(Adv_client_backdoor(f"Adv_Client_{i}_bd", fed_config["poison_rate"]))
     else:
-        for i in range(fed_config["K"]-(fed_config["ADV_ap"]+fed_config["ADV_ba"])):
+        for i in range(fed_config["K"]-(fed_config["ADV_ap"]+fed_config["ADV_ba"] +fed_config['ADV_bd'])):
             clients.append(Client(f"Client_{i + 1}"))
-        print(f"Created {fed_config['K'] - (fed_config['ADV_ap'] + fed_config['ADV_ba'])} normal clients.")
+        print(f"Created {fed_config['K'] - (fed_config['ADV_ap'] + fed_config['ADV_ba']+ fed_config['ADV_bd'])} normal clients.")
         s = 0
         for i in range(fed_config["ADV_ap"]):
             clients.append(Adv_client_ap(f"Adv_Client_{s}_ap",fed_config["poison_rate"]))
             s = s + 1
 
         for i in range(fed_config["ADV_ba"]):
-            clients.append(Adv_client_ba(f"Adv_Client_{s}_ba",fed_config["poison_rate"]))
+            clients.append(Adv_client_ba(f"Adv_Client_{s}_ba", fed_config["poison_rate"]))
             s = s + 1
-    if (fed_config["ADV_ap"]+fed_config["ADV_ba"]) != 0:
+        for i in range(fed_config["ADV_bd"]):
+            clients.append(adv_client_random_label(f"Adv_Client_{s}_random_label",fed_config["poison_rate"]))
+            s = s + 1
+    if (fed_config["ADV_ap"]+fed_config["ADV_ba"]+fed_config["ADV_bd"]) != 0:
         print("Created the following Adversial Clients:")
         for i in clients:
             if "Adv" in i.name: print(i.name)

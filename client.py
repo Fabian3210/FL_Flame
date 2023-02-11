@@ -23,15 +23,17 @@ class Client():
         self.losses = []
         self.training_acc_loss = []
         self.signals = []
+        self.batch = 0
 
     def set_params_and_data(self, config, data_indices, model):
         self.epochs = config["epochs"]
         self.optimizer = config["optimizer"]
         self.learning_rate = config["learning_rate"]
         self.criterion = config["criterion"]
+        self.batch = config["batch_size"]
 
         self.data = get_data_by_indices(config["data_name"], True, data_indices)
-        self.dataloader = torch.utils.data.DataLoader(self.data, batch_size=config["batch_size"], shuffle=True)
+        self.dataloader = torch.utils.data.DataLoader(self.data, batch_size=self.batch, shuffle=True)
         self.logger.info(f"Data distribution: {str(self.class_distribution())}")
 
         self.model = model
