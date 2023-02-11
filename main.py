@@ -14,35 +14,26 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 1, # percentage of clients to pick (floored)
-                  "K": 3, # clients overall
-                  "R": 3, # rounds of training
+                  "K": 20, # clients overall
+                  "R": 20, # rounds of training
                   "E": 3,
                   "B": 64,
                   "A": 0,
                   "A_random": False,
-                  "ADV_ap": 3,
+                  "ADV_ap": 0,
                   "ADV_ba": 0,
                   "poison_rate": 0.75, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
-                  "lr": 0.01,
-                  "data_name": "MNIST",
+                  "lr": 0.001,
+                  "data_name": "FashionMNIST",
                   "shards_each": 2,
                   "iid": True,
                   "degree_niid": 0.8, # 0.8 + 1
-                  "flame": False
+                  "flame": True
                   }
 
-    if fed_config["data_name"] == "MNIST":
-        model = Net_2()
-    elif fed_config["data_name"] == "FashionMNIST":
-        model = Net_2()
-    elif fed_config["data_name"] == "CIFAR100":
-        model = Net_4(100)
-    elif fed_config["data_name"] == "CIFAR10":
-        model = Net_4(10)
-    else:
-        raise AssertionError("No fitting model found. Check your parameters!")
+    model = FashionCNN()
 
     clients = []
     if fed_config["A_random"]:

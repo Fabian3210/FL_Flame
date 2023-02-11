@@ -12,7 +12,8 @@ from server import Server
 from matplotlib.ticker import MaxNLocator
 
 import logging
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(#filename=os.path.join(SAVE_PATH, "server_logger.txt"),
+                    level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
@@ -77,7 +78,7 @@ class Flame_server(Server):
 
 
         for i, client_weights in enumerate(client_models):
-            cmodel = Net_2()
+            cmodel = copy.deepcopy(self.model)
             cmodel.load_state_dict(client_weights)
             loss, acc = self.evaluate(eval_model=cmodel)
             self.logger.info(f"{self.clients_names[i]} values BEFORE FedAvg: loss: {loss:.3f}, accuracy: {acc:.3f}.")
