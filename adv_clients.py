@@ -121,32 +121,27 @@ class Adv_Client(Client):
 
 
 
-class adv_client_random_label(Adv_Client):
+class Adv_client_random_label(Adv_Client):
     def __init__(self, name, pr):
-        super(adv_client_random_label, self).__init__(name, pr)
+        super(Adv_client_random_label, self).__init__(name, pr)
         self.dataloader = None
 
     def set_params_and_data(self, config, data_indices, model):
-        super(adv_client_random_label, self).set_params_and_data(config,data_indices,model)
-        self.dataloader = torch.utils.data.DataLoader(self.poison(), batch_size=config["batch_size"], shuffle=False,drop_last=True)
-        for x,y in self.dataloader:
-            print(x,y)
-            break
-        self.update()
+        super(Adv_client_random_label, self).set_params_and_data(config,data_indices,model)
+        self.dataloader = torch.utils.data.DataLoader(self.poison_data(), batch_size=config["batch_size"], shuffle=False)
 
-
-
-    def poison(self):
+    def poison_data(self):
         x_l = None
         y_l = None
-        for x,y in self.dataloader:
+        for x, y in self.dataloader:
             if x_l is None:
-                x_l, y_l = x,y
+                x_l, y_l = x.numpy(), y.numpy()
             else:
-                x_l = torch.cat((x_l,x))
-                y_l = torch.cat((y_l,y))
-        y_l = torch.squeeze(torch.randint(0,9, size = y_l.shape),dim = 0).to(device)
-        self.logger.info(np.unique(y_l.cpu()))
+                x_l = np.concatenate((x_l, x.numpy()))
+                y_l = np.concatenate((y_l, y.numpy()))
+        y_l = np.random.randint(low= 0,high= 9, size = y_l.shape, dtype="long")
+        y_l = torch.Tensor(y_l).long()
+        x_l = torch.Tensor(x_l)
         return TensorDataset(x_l, y_l)
 
 class Adv_client_backdoor(Adv_Client):
@@ -156,7 +151,7 @@ class Adv_client_backdoor(Adv_Client):
 
     def set_params_and_data(self, config, data_indices, model):
         super(Adv_client_backdoor, self).set_params_and_data(config,data_indices,model)
-        self.poison_data()
+        self.dataloader = torch.utils.data.DataLoader(self.poison_data(),batch_size=config["batch_size"], shuffle=False)
 
 
 
@@ -209,21 +204,15 @@ class Adv_client_backdoor(Adv_Client):
 
         # Poison training data
 
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = poison_dataset(np.transpose(x_l, (0,3,2,1)), y_l, self.poison_rate,
+        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = poison_dataset(np.transpose(x_l, (0,2,3,1)), y_l, self.poison_rate,
                                                                            add_modification)
         x_train, y_train = preprocess(x_poisoned_raw, y_poisoned_raw)
-        # Add channel axis:
+        x_train = torch.Tensor(np.transpose(x_train, (0,3,1,2)))
+        y_train = torch.Tensor(y_train.argmax(axis = 1)).long()
+        return TensorDataset(x_train,y_train)
 
 
 
-
-        # Shuffle training data
-        n_train = np.shape(y_train)[0]
-        shuffled_indices = np.arange(n_train)
-        np.random.shuffle(shuffled_indices)
-        x_train = x_train[shuffled_indices]
-        y_train = y_train[shuffled_indices]
-        is_poison_train = is_poison_train[shuffled_indices]
 
 
 if __name__ == '__main__':
