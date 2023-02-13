@@ -191,12 +191,29 @@ class Adv_client_backdoor(Adv_Client):
                 indices_to_be_poisoned = np.random.choice(n_points_in_src, num_poison)
 
                 imgs_to_be_poisoned = np.copy(src_imgs[indices_to_be_poisoned])
+                if self.save_example:
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), imgs_to_be_poisoned[0].tolist(), cmap='gray')
+
                 backdoor_attack = PoisoningAttackBackdoor(poison_func)
                 imgs_to_be_poisoned, poison_labels = backdoor_attack.poison(imgs_to_be_poisoned,
                                                                             y=np.ones(num_poison) * tgt)
+                if self.save_example:
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), imgs_to_be_poisoned[0].tolist(), cmap='gray')   
+                    self.save_example = False
+
                 x_poison = np.append(x_poison, imgs_to_be_poisoned, axis=0)
                 y_poison = np.append(y_poison, poison_labels, axis=0)
                 is_poison = np.append(is_poison, np.ones(num_poison))
+
+                # if self.save_example:
+                #     plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x_poison[0].tolist(), cmap='gray')
+                #     plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), imgs_to_be_poisoned[0].tolist(), cmap='gray')
+                #     self.save_example = False
+                # print(type(x_poison[0]))
+                # # print(len(imgs_to_be_poisoned[0]))
+                # # plt.imshow(x_poison[0], cmap='gray')
+                # plt.imshow(x_poison[0], cmap='gray')
+                # plt.show()
 
             is_poison = is_poison != 0
 
@@ -216,5 +233,5 @@ class Adv_client_backdoor(Adv_Client):
 
 
 if __name__ == '__main__':
-    s = Adv_Client("Test")
+    s = Adv_client("Test")
 
