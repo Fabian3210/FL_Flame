@@ -133,13 +133,18 @@ class Adv_client_random_label(Adv_Client):
     def poison_data(self):
         x_l = None
         y_l = None
-        for x, y in self.dataloader:
+        self.poison_ind = np.zeros(len(self.dataloader))
+        for i, (x, y) in enumerate(self.dataloader):
             if x_l is None:
                 x_l, y_l = x.numpy(), y.numpy()
             else:
                 x_l = np.concatenate((x_l, x.numpy()))
-                y_l = np.concatenate((y_l, y.numpy()))
-        y_l = np.random.randint(low= 0,high= 9, size = y_l.shape, dtype="long")
+                r = np.random.random()
+                if r < self.poison_rate:
+                    y_l = np.concatenate((y_l, np.random.randint(low= 0,high= 9, size = y.shape)))
+                    self.poison_ind[i] = 1
+                else:
+                    y_l = np.concatenate((y_l, y.numpy()))
         y_l = torch.Tensor(y_l).long()
         x_l = torch.Tensor(x_l)
         return TensorDataset(x_l, y_l)
@@ -182,9 +187,11 @@ class Adv_client_backdoor(Adv_Client):
 
             sources = np.arange(10)  # 0, 1, 2, 3, ...
             targets = (np.arange(10) + 1) % 10  # 1, 2, 3, 4, ...
+
             for i, (src, tgt) in enumerate(zip(sources, targets)):
                 n_points_in_tgt = np.size(np.where(y_clean == tgt))
-                num_poison = round((percent_poison * n_points_in_tgt) / (1 - percent_poison))
+                num_poison = round(n_points_in_tgt * percent_poison)
+
                 src_imgs = x_clean[y_clean == src]
 
                 n_points_in_src = np.shape(src_imgs)[0]
@@ -209,6 +216,7 @@ class Adv_client_backdoor(Adv_Client):
         x_train, y_train = preprocess(x_poisoned_raw, y_poisoned_raw)
         x_train = torch.Tensor(np.transpose(x_train, (0,3,1,2)))
         y_train = torch.Tensor(y_train.argmax(axis = 1)).long()
+        self.poison_ind = np.add.reduceat(is_poison_train, np.arange(0, len(is_poison_train), self.batch)).astype(bool).astype(int)
         return TensorDataset(x_train,y_train)
 
 

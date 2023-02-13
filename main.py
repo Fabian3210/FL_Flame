@@ -23,9 +23,9 @@ def main():
                   "A_random": False,
                   "ADV_ap": 0,
                   "ADV_ba": 0,
-                  "ADV_bd": 2,
-                  "ADV_rl": 2,
-                  "poison_rate": 0.1, #TODO: Poison Rates in Literatures
+                  "ADV_bd": 1,
+                  "ADV_rl": 1,
+                  "poison_rate": 0.8, #TODO: Poison Rates in Literatures
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.001,
