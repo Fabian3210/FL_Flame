@@ -205,16 +205,6 @@ class Adv_client_backdoor(Adv_Client):
                 y_poison = np.append(y_poison, poison_labels, axis=0)
                 is_poison = np.append(is_poison, np.ones(num_poison))
 
-                # if self.save_example:
-                #     plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x.png"), x_poison[0].tolist(), cmap='gray')
-                #     plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), imgs_to_be_poisoned[0].tolist(), cmap='gray')
-                #     self.save_example = False
-                # print(type(x_poison[0]))
-                # # print(len(imgs_to_be_poisoned[0]))
-                # # plt.imshow(x_poison[0], cmap='gray')
-                # plt.imshow(x_poison[0], cmap='gray')
-                # plt.show()
-
             is_poison = is_poison != 0
 
             return is_poison, x_poison, y_poison
