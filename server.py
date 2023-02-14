@@ -137,12 +137,12 @@ class Server():
 
         client_models = [self.send(client, signal) for client, signal in zip(self.clients, signals)]
         coefficients = [size/sum(self.clients_data_len) for size in self.clients_data_len]
-        for i, client_weights in enumerate(client_models):
+        '''for i, client_weights in enumerate(client_models):
             cmodel = copy.deepcopy(self.model)
             cmodel.load_state_dict(client_weights)
             loss, acc = self.evaluate(eval_model=cmodel)
             self.logger.info(f"{self.clients_names[i]} values BEFORE FedAvg: loss: {loss:.3f}, accuracy: {acc:.3f}.")
-
+        '''
         self.average_model(client_models,coefficients)
 
     def fit(self):
@@ -162,9 +162,6 @@ class Server():
             self.accs.append(acc)
             dur = time.time() - start
             self.logger.info(f"Round {r}/{self.num_rounds} completed ({int(dur//60)} min {int(dur%60)} sec): loss: {loss:.3f}, accuracy: {acc:.3f}.")
-
-        for client in self.clients:
-            self.send(client, "Finish")
 
         self.logger.info("Finished training!")
 

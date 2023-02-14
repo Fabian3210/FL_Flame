@@ -34,7 +34,7 @@ class Client():
 
         self.data = get_data_by_indices(config["data_name"], True, data_indices)
         self.dataloader = torch.utils.data.DataLoader(self.data, batch_size=self.batch, shuffle=True)
-        self.logger.info(f"Data distribution: {str(self.class_distribution())}")
+        self.logger.debug(f"Data distribution: {str(self.class_distribution())}")
 
         self.model = model
 
@@ -66,10 +66,10 @@ class Client():
 
             loss, acc = self.evaluate()
             temp_performance.append([loss, acc])
-            self.logger.info(f"Epoch {epoch+1}/{self.epochs} completed ({int(time.time()-start)} sec): loss: {loss:.3f}, acc: {acc:.3f}.")
+            self.logger.debug(f"Epoch {epoch+1}/{self.epochs} completed ({int(time.time()-start)} sec): loss: {loss:.3f}, acc: {acc:.3f}.")
 
         self.training_acc_loss.append(temp_performance)
-        self.logger.info("...finished training!")
+        self.logger.debug("...finished training!")
 
     def evaluate(self, eval_model=None):
         """
@@ -149,7 +149,7 @@ class Client():
             self.losses.append(loss)
             self.logger.info(f"Metrics using final model: loss: {loss:.3f}, acc: {acc:.3f}.")
             self.finish_function()
-            self.logger.info("Exiting!")
+            self.logger.debug("Exiting!")
             self.plots()
             return
 
