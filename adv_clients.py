@@ -54,6 +54,8 @@ class Adv_Client(Client):
                 eval_adversial.append((torch.sum(pred == y) / len(y)).cpu())
         acc = np.mean(eval_benign)
         adv_acc = np.mean(eval_adversial)
+        self.acc_benign.append(acc)
+        self.acc_poison.append(adv_acc)
         return acc, adv_acc
 
     def finish_function(self):

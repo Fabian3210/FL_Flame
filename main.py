@@ -14,26 +14,26 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
-    fed_config = {"C": 1, # percentage of clients to pick (floored)
-                  "K": 10, # clients overall
-                  "R": 10, # rounds of training
+    fed_config = {"C": 0.75, # percentage of clients to pick (floored)
+                  "K": 50, # clients overall
+                  "R": 30, # rounds of training
                   "E": 3,
-                  "B": 64,
+                  "B": 32,
                   "A": 5,
                   "A_random": False,
                   "ADV_ap": 0,
                   "ADV_ba": 0,
-                  "ADV_bd": 1,
-                  "ADV_rl": 1,
-                  "poison_rate": 0.8, #TODO: Poison Rates in Literatures
+                  "ADV_bd": 0,
+                  "ADV_rl": 10,
+                  "poison_rate": 0.8,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.001,
                   "data_name": "FashionMNIST",
                   "shards_each": 2,
                   "iid": True,
-                  "degree_niid": 0.8, # 0.8 + 1
-                  "flame": True
+                  "degree_niid": 0.9, # 0.8 + 1
+                  "flame": False
                   }
 
     model = FashionCNN()
