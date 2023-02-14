@@ -23,9 +23,9 @@ def main():
                   "A_random": False,
                   "ADV_ap": 0,
                   "ADV_ba": 0,
-                  "ADV_bd": 12,
-                  "ADV_rl": 12,
-                  "poison_rate": 0.8,
+                  "ADV_bd": 0,
+                  "ADV_rl": 1,
+                  "poison_rate": 1,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.001,
@@ -53,7 +53,6 @@ def main():
     else:
         for i in range(fed_config["K"]-(fed_config["ADV_ap"]+fed_config["ADV_ba"] +fed_config['ADV_bd']+fed_config["ADV_rl"])):
             clients.append(Client(f"Client_{i + 1}"))
-        print(f"Created {fed_config['K'] - (fed_config['ADV_ap'] + fed_config['ADV_ba']+ fed_config['ADV_bd']+fed_config['ADV_rl'])} normal clients.")
         s = 0
         for i in range(fed_config["ADV_ap"]):
             clients.append(Adv_client_ap(f"Adv_Client_{s}_ap",fed_config["poison_rate"]))
@@ -68,10 +67,7 @@ def main():
         for i in range(fed_config["ADV_rl"]):
             clients.append(Adv_client_random_label(f"Adv_Client_{s}_random_label",fed_config["poison_rate"]))
             s = s + 1
-    if (fed_config["ADV_ap"]+fed_config["ADV_ba"]+fed_config["ADV_bd"]+fed_config["ADV_rl"]) != 0:
-        print("Created the following Adversial Clients:")
-        for i in clients:
-            if "Adv" in i.name: print(i.name)
+
     
     if fed_config["flame"]:
         server = Flame_server(model, fed_config, clients)

@@ -134,17 +134,26 @@ class Adv_client_random_label(Adv_Client):
 
     def set_params_and_data(self, config, data_indices, model):
         super(Adv_client_random_label, self).set_params_and_data(config,data_indices,model)
-        self.dataloader = torch.utils.data.DataLoader(self.poison_data(), batch_size=config["batch_size"], shuffle=False)
+        self.dataloader = torch.utils.data.DataLoader(self.poison_data(), batch_size=config["batch_size"], shuffle=True)
 
     def poison_data(self):
         x_l = None
         y_l = None
+        y_l_true = None
         self.poison_ind = np.zeros(len(self.dataloader))
         for i, (x, y) in enumerate(self.dataloader):
+
             if x_l is None:
-                x_l, y_l = x.numpy(), y.numpy()
+                r = np.random.random()
+                if r < self.poison_rate:
+
+                    x_l, y_l, y_l_true = x.numpy(), np.random.randint(low=0, high=9, size=y.shape), y.numpy()
+                    self.poison_ind[i] = 1
+                else:
+                    x_l, y_l, y_l_true = x.numpy(), y.numpy(), y.numpy()
             else:
                 x_l = np.concatenate((x_l, x.numpy()))
+                y_l_true = np.concatenate((y_l_true, y.numpy()))
                 r = np.random.random()
                 if r < self.poison_rate:
                     y_l = np.concatenate((y_l, np.random.randint(low= 0,high= 9, size = y.shape)))
@@ -153,6 +162,7 @@ class Adv_client_random_label(Adv_Client):
                     y_l = np.concatenate((y_l, y.numpy()))
         y_l = torch.Tensor(y_l).long()
         x_l = torch.Tensor(x_l)
+        self.logger.info(f"Amount of true labels: {sum(y_l == torch.Tensor(y_l_true).long())/200}")
         return TensorDataset(x_l, y_l)
 
 class Adv_client_backdoor(Adv_Client):
@@ -162,7 +172,7 @@ class Adv_client_backdoor(Adv_Client):
 
     def set_params_and_data(self, config, data_indices, model):
         super(Adv_client_backdoor, self).set_params_and_data(config,data_indices,model)
-        self.dataloader = torch.utils.data.DataLoader(self.poison_data(),batch_size=config["batch_size"], shuffle=False)
+        self.dataloader = torch.utils.data.DataLoader(self.poison_data(),batch_size=config["batch_size"], shuffle=True)
 
 
 
@@ -187,12 +197,12 @@ class Adv_client_backdoor(Adv_Client):
                 raise ("Unknown backdoor type")
 
         def poison_dataset(x_clean, y_clean, percent_poison, poison_func):
-            x_poison = np.copy(x_clean)
-            y_poison = np.copy(y_clean)
-            is_poison = np.zeros(len(y_poison))
+            x_poison = None
+            y_poison = None
+            is_poison = None
 
             sources = np.arange(10)  # 0, 1, 2, 3, ...
-            targets = (np.arange(10) + 1) % 10  # 1, 2, 3, 4, ...
+            targets = np.arange(1,11) % 10   # 1, 2, 3, 4, ...
 
             for i, (src, tgt) in enumerate(zip(sources, targets)):
                 n_points_in_tgt = np.size(np.where(y_clean == tgt))
@@ -213,10 +223,14 @@ class Adv_client_backdoor(Adv_Client):
                 if self.save_example:
                     plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), imgs_to_be_poisoned[0].tolist(), cmap='gray')   
                     self.save_example = False
-
-                x_poison = np.append(x_poison, imgs_to_be_poisoned, axis=0)
-                y_poison = np.append(y_poison, poison_labels, axis=0)
-                is_poison = np.append(is_poison, np.ones(num_poison))
+                if x_poison is None:
+                    x_poison = imgs_to_be_poisoned
+                    y_poison = poison_labels
+                    is_poison = np.ones(indices_to_be_poisoned.shape)
+                else:
+                    x_poison = np.append(x_poison, imgs_to_be_poisoned, axis=0)
+                    y_poison = np.append(y_poison, poison_labels, axis=0)
+                    is_poison = np.append(is_poison, np.ones(num_poison))
 
             is_poison = is_poison != 0
 
@@ -229,8 +243,37 @@ class Adv_client_backdoor(Adv_Client):
         x_train, y_train = preprocess(x_poisoned_raw, y_poisoned_raw)
         x_train = torch.Tensor(np.transpose(x_train, (0,3,1,2)))
         y_train = torch.Tensor(y_train.argmax(axis = 1)).long()
-        self.poison_ind = np.add.reduceat(is_poison_train, np.arange(0, len(is_poison_train), self.batch)).astype(bool).astype(int)
+
+        x_train_b = torch.Tensor(x_l)
+        y_train_b = torch.Tensor(y_l).long()
+
+        self.dataloader_benign = torch.utils.data.DataLoader(TensorDataset(x_train_b,y_train_b),batch_size=self.batch, shuffle=True)
         return TensorDataset(x_train,y_train)
+
+    def adv_metrics(self):
+        self.model.eval()
+        eval_benign = []
+        eval_adversial = []
+        for x, y in self.dataloader:
+            x = x.to(device)
+            y = y.to(device)
+            self.model.to(device)
+
+            pred: object = self.model(x).max(dim=1).indices
+            eval_adversial.append((torch.sum(pred == y) / len(y)).cpu())
+        for x, y in self.dataloader_benign:
+            x = x.to(device)
+            y = y.to(device)
+            self.model.to(device)
+
+            pred: object = self.model(x).max(dim=1).indices
+            eval_benign.append((torch.sum(pred == y) / len(y)).cpu())
+
+        acc = np.mean(eval_benign)
+        adv_acc = np.mean(eval_adversial)
+        self.acc_benign.append(acc)
+        self.acc_poison.append(adv_acc)
+        return acc, adv_acc
 
 
 
