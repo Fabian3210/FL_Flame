@@ -36,6 +36,10 @@ class Adv_Client(Client):
     def poison_data(self):
         pass
 
+    def evaluate(self, eval_model=None):
+        self.adv_metrics()
+        return super().evaluate()
+
 
     def adv_metrics(self):
         self.model.eval()
@@ -59,7 +63,7 @@ class Adv_Client(Client):
         return acc, adv_acc
 
     def finish_function(self):
-        benign_acc, adv_acc = self.adv_metrics()
+        benign_acc, adv_acc = self.acc_benign[-1], self.acc_poison[-1]
         self.logger.info(f"Adv. metrics using final model: benign_acc: {benign_acc}, adv_acc: {adv_acc} ")
 
     def plots(self):

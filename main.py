@@ -16,15 +16,15 @@ def main():
 
     fed_config = {"C": 0.75, # percentage of clients to pick (floored)
                   "K": 50, # clients overall
-                  "R": 30, # rounds of training
+                  "R": 5, # rounds of training
                   "E": 3,
                   "B": 32,
                   "A": 5,
                   "A_random": False,
                   "ADV_ap": 0,
                   "ADV_ba": 0,
-                  "ADV_bd": 0,
-                  "ADV_rl": 10,
+                  "ADV_bd": 12,
+                  "ADV_rl": 12,
                   "poison_rate": 0.8,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
