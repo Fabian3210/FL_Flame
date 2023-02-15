@@ -15,17 +15,14 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 def main():
 
     fed_config = {"C": 0.75, # percentage of clients to pick (floored)
-                  "K": 50, # clients overall
-                  "R": 5, # rounds of training
+                  "K": 10, # clients overall
+                  "R": 10, # rounds of training
                   "E": 3,
                   "B": 32,
-                  "A": 5,
-                  "A_random": False,
-                  "ADV_ap": 0,
-                  "ADV_ba": 0,
                   "ADV_bd": 0,
-                  "ADV_rl": 1,
-                  "poison_rate": 1,
+                  "ADV_rl": 0,
+                  "ADV_mp": 10,
+                  "poison_rate": 0.8,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
                   "lr": 0.001,
@@ -39,34 +36,19 @@ def main():
     model = FashionCNN()
 
     clients = []
-    if fed_config["A_random"]:
-        for i in range(fed_config["K"]-fed_config["A"]):
-            clients.append(Client(f"Client_{i + 1}"))
-        print(f"Created {fed_config['K']-fed_config['A']} normal clients.")
 
-        for i in range(fed_config["A"]):
-            r = random.random()
-            if r < 0.5:
-                clients.append(Adv_client_ap(f"Adv_Client_{i}_ap", fed_config["poison_rate"]))
-            if r > 0.5:
-                clients.append(Adv_client_backdoor(f"Adv_Client_{i}_bd", fed_config["poison_rate"]))
-    else:
-        for i in range(fed_config["K"]-(fed_config["ADV_ap"]+fed_config["ADV_ba"] +fed_config['ADV_bd']+fed_config["ADV_rl"])):
-            clients.append(Client(f"Client_{i + 1}"))
-        s = 0
-        for i in range(fed_config["ADV_ap"]):
-            clients.append(Adv_client_ap(f"Adv_Client_{s}_ap",fed_config["poison_rate"]))
-            s = s + 1
-
-        for i in range(fed_config["ADV_ba"]):
-            clients.append(Adv_client_ba(f"Adv_Client_{s}_ba", fed_config["poison_rate"]))
-            s = s + 1
-        for i in range(fed_config["ADV_bd"]):
-            clients.append(Adv_client_backdoor(f"Adv_Client_{s}_backdoor",fed_config["poison_rate"]))
-            s = s + 1
-        for i in range(fed_config["ADV_rl"]):
-            clients.append(Adv_client_random_label(f"Adv_Client_{s}_random_label",fed_config["poison_rate"]))
-            s = s + 1
+    for i in range(fed_config["K"]-(fed_config['ADV_bd']+fed_config["ADV_rl"]+ fed_config["ADV_mp"])):
+        clients.append(Client(f"Client_{i + 1}"))
+    s = 0
+    for i in range(fed_config["ADV_bd"]):
+        clients.append(Adv_client_backdoor(f"Adv_Client_{s}_backdoor",fed_config["poison_rate"]))
+        s = s + 1
+    for i in range(fed_config["ADV_rl"]):
+        clients.append(Adv_client_random_label(f"Adv_Client_{s}_random_label", fed_config["poison_rate"]))
+        s = s + 1
+    for i in range(fed_config["ADV_mp"]):
+        clients.append(Adv_client_model_poisoning(f"Adv_Client_{s}_model_poison",fed_config["poison_rate"]))
+        s = s + 1
 
     
     if fed_config["flame"]:

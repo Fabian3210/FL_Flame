@@ -1,3 +1,4 @@
+import copy
 import os
 import time
 import torch
@@ -275,7 +276,60 @@ class Adv_client_backdoor(Adv_Client):
         self.acc_poison.append(adv_acc)
         return acc, adv_acc
 
+class Adv_client_model_poisoning(Adv_Client):
+    def __init__(self, name, pr):
+        super(Adv_client_model_poisoning, self).__init__(name, pr)
+        self.dataloader = None
+        self.benign_model = None
 
+    def set_params_and_data(self, config, data_indices, model):
+        super(Adv_client_model_poisoning, self).set_params_and_data(config, data_indices, model)
+        self.benign_model = self.model
+
+    def update(self):
+        self.poison_data()
+        super(Adv_client_model_poisoning, self).update()
+
+
+
+
+    def poison_data(self):
+        self.benign_model = copy.deepcopy(self.model)
+        self.benign_model.load_state_dict(self.model.state_dict())
+        state_dict = self.model.state_dict()
+        for k in state_dict:
+            original_shape = state_dict[k].shape
+            state_dict[k] = state_dict[k].to("cpu").flatten()
+            ps = np.ones(state_dict[k].shape)
+            r = np.random.rand(1)
+            if r <= 0.5:
+                ps[:int(len(ps) * self.poison_rate)] = 0.75
+            else:
+                ps[:int(len(ps) * self.poison_rate)] = 1.25
+
+            state_dict[k] = state_dict[k] * ps
+            state_dict[k] = state_dict[k].reshape(original_shape).float().to(device)
+        self.model.load_state_dict(state_dict)
+
+    def adv_metrics(self):
+        self.model.eval()
+        eval_benign = []
+        eval_adversial = []
+        for x, y in self.dataloader:
+            x = x.to(device)
+            y = y.to(device)
+            self.model.to(device)
+
+            pred: object = self.model(x).max(dim=1).indices
+            eval_adversial.append((torch.sum(pred == y) / len(y)).cpu())
+            pred: object = self.benign_model(x).max(dim=1).indices
+            eval_benign.append((torch.sum(pred == y) / len(y)).cpu())
+
+        acc = np.mean(eval_benign)
+        adv_acc = np.mean(eval_adversial)
+        self.acc_benign.append(acc)
+        self.acc_poison.append(adv_acc)
+        return acc, adv_acc
 
 
 
