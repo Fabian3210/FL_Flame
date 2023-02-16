@@ -163,7 +163,7 @@ class Adv_client_random_label(Adv_Client):
                     y_l = np.concatenate((y_l, y.numpy()))
         y_l = torch.Tensor(y_l).long()
         x_l = torch.Tensor(x_l)
-        self.logger.info(f"Amount of true labels: {sum(y_l == torch.Tensor(y_l_true).long())/200}")
+        self.logger.info(f"Amount of true labels: {(sum(y_l == torch.Tensor(y_l_true).long())/200):.3f}")
         return TensorDataset(x_l, y_l)
 
 class Adv_client_backdoor(Adv_Client):
@@ -284,35 +284,33 @@ class Adv_client_model_poisoning(Adv_Client):
 
     def set_params_and_data(self, config, data_indices, model):
         super(Adv_client_model_poisoning, self).set_params_and_data(config, data_indices, model)
-        self.benign_model = self.model
+        self.benign_model = copy.deepcopy(self.model)
 
     def update(self):
-        self.poison_data()
         super(Adv_client_model_poisoning, self).update()
-
-
-
+        self.poison_data()
 
     def poison_data(self):
         self.benign_model = copy.deepcopy(self.model)
         self.benign_model.load_state_dict(self.model.state_dict())
-        state_dict = self.model.state_dict()
-        for k in state_dict:
-            original_shape = state_dict[k].shape
-            state_dict[k] = state_dict[k].to("cpu").flatten()
-            ps = np.ones(state_dict[k].shape)
-            r = np.random.rand(1)
-            if r <= 0.5:
-                ps[:int(len(ps) * self.poison_rate)] = 0.75
-            else:
-                ps[:int(len(ps) * self.poison_rate)] = 1.25
-
-            state_dict[k] = state_dict[k] * ps
-            state_dict[k] = state_dict[k].reshape(original_shape).float().to(device)
+        state_dict = {}
+        for key, value in self.model.state_dict().items():
+            len = 1
+            for x in value.shape: len *= x
+            if len == 1:
+                state_dict[key] = value
+                continue
+            mul = np.concatenate([np.random.uniform(-self.poison_rate, self.poison_rate, int(np.floor(len/2))) + 1,
+                                  np.random.uniform(-self.poison_rate, self.poison_rate, int(np.ceil(len/2))) + 1])
+            np.random.shuffle(mul)
+            mul = np.reshape(mul, list(value.shape))
+            mul = torch.Tensor(mul).to(device)
+            state_dict[key] = torch.multiply(copy.deepcopy(value), mul)
         self.model.load_state_dict(state_dict)
 
     def adv_metrics(self):
         self.model.eval()
+        self.benign_model.eval()
         eval_benign = []
         eval_adversial = []
         for x, y in self.dataloader:
