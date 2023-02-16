@@ -304,7 +304,7 @@ class Adv_client_model_poisoning(Adv_Client):
                 state_dict[key] = value
                 continue
             mul = np.concatenate([np.random.uniform(-self.poison_rate, self.poison_rate, int(np.floor(len/2))) + 1,
-                                  np.random.uniform(-self.poison_rate, self.poison_rate, int(np.ceil(len/2))) + 1])
+                                  np.random.uniform(-self.poison_rate, self.poison_rate, int(np.ceil(len/2))) - 1])
             np.random.shuffle(mul)
             mul = np.reshape(mul, list(value.shape))
 
