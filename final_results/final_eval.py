@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-path = os.path.join(os.getcwd(), "../experiment_setting.csv")
+path = os.path.join(os.getcwd(), "experiment_setting.csv")
 
 df = pd.read_csv(path)
 df = df.set_index("number")
