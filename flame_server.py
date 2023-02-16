@@ -133,7 +133,9 @@ class Flame_server(Server):
         tpnp2 = [f"{np.sum((labels == True) & (np.array(self.adv_clients) == False))}/{self.num_clients - np.count_nonzero(self.adv_clients)}", f"{np.sum((labels == False) & (np.array(self.adv_clients) == True))}/{np.count_nonzero(self.adv_clients)}"]
         self.tpnp.append(tpnp2)
         self.logger.info(f"(1) Dynamic Model Filtering | {sorted_list}, benign cluster: {benign_cluster}, TP: {tpnp2[0]}, TN: {tpnp2[1]}")
-        benign_client_models = [model for model, benign in zip(client_models, labels == np.full(self.num_clients, benign_cluster)) if benign]
+        benign_client_models = [model for model, benign in zip(client_models, labels) if benign]
+        if len(sorted_list) == 1:
+            return flattened, client_models
         return flattened, benign_client_models
 
     def adaptive_clipping(self, flattened, benign_client_models):
