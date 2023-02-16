@@ -19,9 +19,9 @@ def main():
                   "R": 30, # rounds of training
                   "E": 3,
                   "B": 32,
-                  "ADV_bd": 0,
-                  "ADV_rl": 0,
-                  "ADV_mp": 0,
+                  "ADV_bd": 7,
+                  "ADV_rl": 7,
+                  "ADV_mp": 6,
                   "poison_rate": 0.8,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
@@ -30,7 +30,7 @@ def main():
                   "shards_each": 2,
                   "iid": False,
                   "degree_niid": 0.6, # 0.8 + 1
-                  "flame": True
+                  "flame": False
                   }
 
     model = Net_2()
