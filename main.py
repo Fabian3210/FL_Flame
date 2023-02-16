@@ -13,7 +13,7 @@ from config import SAVE_PATH
 from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
-
+    #current: 16
     fed_config = {"C": 0.8, # percentage of clients to pick (floored)
                   "K": 50, # clients overall
                   "R": 30, # rounds of training
@@ -28,8 +28,8 @@ def main():
                   "lr": 0.0001,
                   "data_name": "MNIST",
                   "shards_each": 2,
-                  "iid": True,
-                  "degree_niid": 0.9, # 0.8 + 1
+                  "iid": False,
+                  "degree_niid": 0.6, # 0.8 + 1
                   "flame": True
                   }
 
