@@ -206,10 +206,12 @@ class Adv_client_backdoor(Adv_Client):
             targets = np.arange(1,11) % 10   # 1, 2, 3, 4, ...
 
             for i, (src, tgt) in enumerate(zip(sources, targets)):
-                n_points_in_tgt = np.size(np.where(y_clean == tgt))
-                num_poison = round(n_points_in_tgt * percent_poison)
 
                 src_imgs = x_clean[y_clean == src]
+                num_poison = round(len(src_imgs) * percent_poison)
+                if len(src_imgs) == 0:
+                    continue
+
 
                 n_points_in_src = np.shape(src_imgs)[0]
                 indices_to_be_poisoned = np.random.choice(n_points_in_src, num_poison)
@@ -222,7 +224,7 @@ class Adv_client_backdoor(Adv_Client):
                 imgs_to_be_poisoned, poison_labels = backdoor_attack.poison(imgs_to_be_poisoned,
                                                                             y=np.ones(num_poison) * tgt)
                 if self.save_example:
-                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), imgs_to_be_poisoned[0].tolist(), cmap='gray')   
+                    plt.imsave(os.path.join(SAVE_PATH, f"{self.name}_x_poisoned.png"), imgs_to_be_poisoned[0].tolist(), cmap='gray')
                     self.save_example = False
                 if x_poison is None:
                     x_poison = imgs_to_be_poisoned
@@ -290,12 +292,17 @@ class Adv_client_model_poisoning(Adv_Client):
         super(Adv_client_model_poisoning, self).update()
         self.poison_data()
 
+
     def poison_data(self):
         self.benign_model = copy.deepcopy(self.model)
         self.benign_model.load_state_dict(self.model.state_dict())
         state_dict = {}
         for key, value in self.model.state_dict().items():
             len = 1
+            value = value.cpu().numpy()
+            vs = value.shape
+            value.flatten()[value.flatten().isnan()] = np.random.uniform(-1,1,1)
+            value = value.reshape(vs)
             for x in value.shape: len *= x
             if len == 1:
                 state_dict[key] = value
@@ -304,8 +311,11 @@ class Adv_client_model_poisoning(Adv_Client):
                                   np.random.uniform(-self.poison_rate, self.poison_rate, int(np.ceil(len/2))) + 1])
             np.random.shuffle(mul)
             mul = np.reshape(mul, list(value.shape))
+
             mul = torch.Tensor(mul).to(device)
+            print(mul.isnan().sum())
             state_dict[key] = torch.multiply(copy.deepcopy(value), mul)
+            print(state_dict[key].isnan().sum())
         self.model.load_state_dict(state_dict)
 
     def adv_metrics(self):
