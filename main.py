@@ -50,6 +50,7 @@ def main():
         clients.append(Adv_client_model_poisoning(f"Adv_Client_{s}_model_poison",fed_config["poison_rate"]))
         s = s + 1
 
+    
     if fed_config["flame"]:
         server = Flame_server(model, fed_config, clients)
     else:
