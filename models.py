@@ -72,12 +72,12 @@ class FashionCNN(nn.Module):
         out = self.layer1(x)
         out = self.layer2(out)
         out = out.view(out.size(0), -1)
-        out = self.fc1(out)
+        out = torch.nn.ReLU()(self.fc1(out))
         out = self.drop(out)
-        out = self.fc2(out)
-        out = self.fc3(out)
+        out = torch.nn.ReLU()(self.fc2(out))
+        out = torch.nn.functional.softmax(self.fc3(out))
 
-        return torch.nn.functional.softmax(out)
+        return out
 
 class Net_4(nn.Module):
     def __init__(self, n_classes = 10):

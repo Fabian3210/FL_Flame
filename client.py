@@ -113,7 +113,7 @@ class Client():
     def setup_logger(self, name):
         logger = logging.getLogger(name)
         # logger.addHandler(logging.StreamHandler())
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.WARNING)
         return logger
 
     def receive(self, signal, data):
