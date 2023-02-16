@@ -77,7 +77,7 @@ class FashionCNN(nn.Module):
         out = self.fc2(out)
         out = self.fc3(out)
 
-        return out
+        return torch.nn.functional.softmax(out)
 
 class Net_4(nn.Module):
     def __init__(self, n_classes = 10):
