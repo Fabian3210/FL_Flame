@@ -299,10 +299,6 @@ class Adv_client_model_poisoning(Adv_Client):
         state_dict = {}
         for key, value in self.model.state_dict().items():
             len = 1
-            value = value.cpu().numpy()
-            vs = value.shape
-            value.flatten()[value.flatten().isnan()] = np.random.uniform(-1,1,1)
-            value = value.reshape(vs)
             for x in value.shape: len *= x
             if len == 1:
                 state_dict[key] = value
@@ -313,9 +309,7 @@ class Adv_client_model_poisoning(Adv_Client):
             mul = np.reshape(mul, list(value.shape))
 
             mul = torch.Tensor(mul).to(device)
-            print(mul.isnan().sum())
             state_dict[key] = torch.multiply(copy.deepcopy(value), mul)
-            print(state_dict[key].isnan().sum())
         self.model.load_state_dict(state_dict)
 
     def adv_metrics(self):

@@ -14,26 +14,26 @@ from utils import LESS_DATA, SERVER_TEST_SIZE, SERVER_TRAIN_SIZE
 
 def main():
 
-    fed_config = {"C": 0.75, # percentage of clients to pick (floored)
-                  "K": 10, # clients overall
-                  "R": 10, # rounds of training
+    fed_config = {"C": 0.8, # percentage of clients to pick (floored)
+                  "K": 50, # clients overall
+                  "R": 30, # rounds of training
                   "E": 3,
                   "B": 32,
                   "ADV_bd": 0,
                   "ADV_rl": 0,
-                  "ADV_mp": 10,
+                  "ADV_mp": 0,
                   "poison_rate": 0.8,
                   "optimizer": torch.optim.Adam,
                   "criterion": nn.CrossEntropyLoss(),
-                  "lr": 0.001,
-                  "data_name": "FashionMNIST",
+                  "lr": 0.0001,
+                  "data_name": "MNIST",
                   "shards_each": 2,
                   "iid": True,
                   "degree_niid": 0.9, # 0.8 + 1
-                  "flame": False
+                  "flame": True
                   }
 
-    model = FashionCNN()
+    model = Net_2()
 
     clients = []
 
@@ -50,7 +50,6 @@ def main():
         clients.append(Adv_client_model_poisoning(f"Adv_Client_{s}_model_poison",fed_config["poison_rate"]))
         s = s + 1
 
-    
     if fed_config["flame"]:
         server = Flame_server(model, fed_config, clients)
     else:
