@@ -35,6 +35,7 @@ class Flame_server(Server):
         with open(os.path.join(SAVE_PATH, "configuration.txt"), 'a') as f:
             f.write(f"Information from Server:\n\n")
             f.write(f"Accuracy: {self.accs}\n")
+            f.write(f"Loss: {self.losses}\n")
             f.write(f"TPNP: {self.tpnp}\n")
             f.write(f"S: {self.past_S}\n")
             f.write(f"sigma: {self.past_sigma}\n\n")
@@ -104,9 +105,6 @@ class Flame_server(Server):
             self.accs.append(acc)
             dur = time.time() - start
             self.logger.info(f"Round {r}/{self.num_rounds} completed ({int(dur//60)} min {int(dur%60)} sec): loss: {loss:.3f}, accuracy: {acc:.3f}.")
-
-        for client in self.clients:
-            self.send(client, "Finish")
 
         self.logger.info("Finished training!")
         self.logger.info(f"All S: {self.past_S}")
